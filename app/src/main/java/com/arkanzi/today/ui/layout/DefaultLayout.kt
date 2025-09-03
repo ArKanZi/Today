@@ -1,11 +1,14 @@
 package com.arkanzi.today.ui.layout
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.tooling.preview.Preview
+
+
 
 
 @Composable
@@ -16,7 +19,7 @@ fun DefaultLayout(
 ) {
     Scaffold(topBar = topBar,
         bottomBar = bottomBar,
-        containerColor = Color(0xFFF5F7F9),
+        containerColor = MaterialTheme.colorScheme.background,
         content = {innerPadding ->
             content(innerPadding) })
 }
@@ -24,5 +27,5 @@ fun DefaultLayout(
 @Preview
 @Composable
 fun DefaultLayoutPreview() {
-    DefaultLayout(content = { Text("Content", color = Color.Black) })
+    DefaultLayout(content = { Text("Content", color = MaterialTheme.colorScheme.error) })
 }

@@ -3,6 +3,7 @@ package com.arkanzi.today.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -141,7 +142,7 @@ fun SingleNote(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF5F7F9))
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Column(modifier = Modifier.align(alignment = Alignment.CenterVertically)) {
                     CustomCircleCheckbox(isCompleted, { onCheckedChange(it) }, size = 24)
@@ -150,7 +151,7 @@ fun SingleNote(
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
                         .padding(horizontal = 8.dp)
-                        .weight(2f)
+                        .weight(2f).clickable{onClick}
                 ) {
                     Text(
                         title,

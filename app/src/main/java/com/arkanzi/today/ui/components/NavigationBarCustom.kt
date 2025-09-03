@@ -1,5 +1,6 @@
 package com.arkanzi.today.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,10 +36,14 @@ import com.arkanzi.today.ui.navigation.MainScreenKey
 
 @Composable
 fun NavigationBarCustom(backStack: NavBackStack) {
+    val top = backStack.lastOrNull() // e.g., State<NavKey> or similar
+    val selectedTint = MaterialTheme.colorScheme.onSurfaceVariant
+    val unselectedTint = MaterialTheme.colorScheme.outline
+    fun tintFor(key: Any) = if (top == key) selectedTint else unselectedTint
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
             .navigationBarsPadding()
     ) {
         // The nav bar row
@@ -46,7 +52,7 @@ fun NavigationBarCustom(backStack: NavBackStack) {
                 .fillMaxWidth()
                 .height(64.dp)
                 .background(
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
                 )
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -61,7 +67,7 @@ fun NavigationBarCustom(backStack: NavBackStack) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_home),
                     contentDescription = "Home",
-                    tint = Color.DarkGray,
+                    tint = tintFor(MainScreenKey),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -92,7 +98,7 @@ fun NavigationBarCustom(backStack: NavBackStack) {
                             )
                         ),
                         shape = CircleShape
-                    ).clickable{ backStack.add(AddNotesKey(screenId = "11")) },
+                    ).clickable{ backStack.add(AddNotesKey) },
                 contentAlignment = Alignment.Center
             ) {
                     Icon(
