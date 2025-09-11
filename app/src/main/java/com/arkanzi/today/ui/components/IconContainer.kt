@@ -22,15 +22,20 @@ fun IconContainer(
     icon: Int,
     description: String,
     modifier: Modifier = Modifier,
-    tint:Color = Color.Black,
+    iconModifier: Modifier = Modifier
+        .clip(CircleShape)
+        .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+    tint: Color = Color.Black,
     onClick: () -> Unit = {}
 ) {
-    Surface(shape = CircleShape,
+    Surface(
+        shape = CircleShape,
         shadowElevation = 2.dp,
-        modifier = modifier) {
+        modifier = modifier
+    ) {
         IconButton(
             onClick = onClick,
-            modifier = Modifier.clip(CircleShape)
+            modifier = iconModifier
         )
         {
             Icon(

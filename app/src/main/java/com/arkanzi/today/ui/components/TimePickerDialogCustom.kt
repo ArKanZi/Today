@@ -12,7 +12,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import java.util.*
+import java.time.LocalTime
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,32 +22,40 @@ fun TimePickerDialogCustom(
     onDismiss: () -> Unit,
     initialTimestamp: Long,
     is24Hour: Boolean = false,
-    title:String,
+    title: String,
     onTimeSelected: (selectedTimestamp: Long) -> Unit,
 ) {
-    // Convert timestamp to hour and minute
     val calendar = remember(initialTimestamp) {
         Calendar.getInstance().apply {
             timeInMillis = initialTimestamp
         }
     }
-    val initHour = calendar.get(Calendar.HOUR_OF_DAY)
-    val initMinute = calendar.get(Calendar.MINUTE)
 
-    val timeState = rememberTimePickerState(
-        initialHour = initHour,
-        initialMinute = initMinute,
-        is24Hour = is24Hour
-    )
+    val timeState = remember(showDialog) {
+        if (showDialog) {
+            TimePickerState(
+                initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+                initialMinute = calendar.get(Calendar.MINUTE),
+                is24Hour = is24Hour
+            )
+        } else {
+            null
+        }
+    }
 
-    if (showDialog) {
+    if (showDialog && timeState != null) {
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties()
         ) {
             Surface(shape = MaterialTheme.shapes.medium) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Row(modifier = Modifier.padding(bottom=20.dp)){Text(title, fontSize = MaterialTheme.typography.headlineSmall.fontSize)}
+                    Row(modifier = Modifier.padding(bottom = 20.dp)) {
+                        Text(
+                            title,
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize
+                        )
+                    }
                     TimePicker(state = timeState)
                     Row(
                         horizontalArrangement = Arrangement.End,
@@ -58,7 +67,6 @@ fun TimePickerDialogCustom(
                             Text("Cancel")
                         }
                         TextButton(onClick = {
-                            // Convert selected hour/minute back to timestamp, keeping date unchanged
                             val cal = Calendar.getInstance().apply {
                                 timeInMillis = initialTimestamp
                                 set(Calendar.HOUR_OF_DAY, timeState.hour)
@@ -78,8 +86,6 @@ fun TimePickerDialogCustom(
     }
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun TimePickerDialogSafePreview() {
@@ -92,12 +98,11 @@ fun TimePickerDialogSafePreview() {
 
         TimePickerDialogCustom(
             showDialog = showDialog,
-            onDismiss = { showDialog },
-            initialTimestamp = 1755963152989,
+            onDismiss = { showDialog = false }, // Fixed: was missing = false
+            initialTimestamp =17000000000L,
             is24Hour = false,
-            onTimeSelected = {},
-            title = "NEw time"
+            onTimeSelected = { /* Handle selected time */ },
+            title = "New time"
         )
     }
 }
-

@@ -7,7 +7,7 @@ import com.arkanzi.today.data.dao.NoteDao
 import com.arkanzi.today.model.CalendarType
 import com.arkanzi.today.model.Note
 
-@Database(entities = [Note::class, CalendarType::class], version = 6, exportSchema = false)
+@Database(entities = [Note::class, CalendarType::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase(){
     abstract fun noteDao(): NoteDao
     abstract fun calendarTypeDao(): CalendarTypeDao

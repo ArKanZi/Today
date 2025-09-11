@@ -15,37 +15,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import com.arkanzi.today.util.CustomSelectableDates
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 
-
-@OptIn(ExperimentalMaterial3Api::class)
-object FutureOrTodaySelectableDates : SelectableDates {
-    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-        val now = System.currentTimeMillis()
-        // Allow today and future; normalize both to date-only if needed
-        return utcTimeMillis >= startOfTodayUtc()
-    }
-    override fun isSelectableYear(year: Int): Boolean {
-        val currentYear = java.time.LocalDate.now().year
-        return year >= currentYear
-    }
-    private fun startOfTodayUtc(): Long {
-        val today = java.time.LocalDate.now(java.time.ZoneOffset.UTC)
-        return today.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerDialogCustom(
     show: Boolean,
     onDismiss: () -> Unit,
-    initialSelectedDateMillis: Long? = null,
+    initialSelectedDateMillis: Long = LocalDate.now().atStartOfDay(ZoneOffset.UTC)
+        .toInstant().toEpochMilli(),
+    selectableDates: SelectableDates = CustomSelectableDates(),
     onDateSelected: (Long) -> Unit
 ) {
     if (!show) return
     val state = rememberDatePickerState(
         initialSelectedDateMillis = initialSelectedDateMillis,
-        selectableDates = FutureOrTodaySelectableDates
+        selectableDates = selectableDates
     )
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -65,15 +54,20 @@ fun DatePickerDialogCustom(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun DatePickerDialogCustomPreview(){
+fun DatePickerDialogCustomPreview() {
     var showDialog by remember { mutableStateOf(false) }
 
     Column {
         Button(onClick = { showDialog = true }) {
             Text("Open TimePickerDialog")
         }
-        DatePickerDialogCustom(show = showDialog, onDismiss = {showDialog = false }, onDateSelected = {})
+        DatePickerDialogCustom(
+            show = showDialog,
+            onDismiss = { showDialog = false },
+            initialSelectedDateMillis = 1704067200000,
+            onDateSelected = {})
     }
 }

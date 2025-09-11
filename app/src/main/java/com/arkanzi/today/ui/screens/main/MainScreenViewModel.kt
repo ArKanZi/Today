@@ -17,6 +17,8 @@ class MainScreenViewModel(private val noteRepository: NoteRepository): ViewModel
     val notes: StateFlow<List<Note>> = noteRepository.allNotes
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+
+
     var noteExtraOptionsId by mutableStateOf(false)
 
     fun toggleCompleted(note: Note) {

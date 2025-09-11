@@ -155,7 +155,7 @@ fun MainScreen(backStack: NavBackStack, noteRepository: NoteRepository) {
                     SingleNote(
                         note.isCompleted,
                         title = note.title,
-                        startingTime = displayTime(note.startTime),
+                        startingTime = displayTime(note.startDateTime),
                         isRevealed = viewModel.noteExtraOptionsId,
                         onCheckedChange = { viewModel.toggleCompleted(note) },
                         onClick={ }

@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -15,11 +16,12 @@ import androidx.compose.ui.tooling.preview.Preview
 fun DefaultLayout(
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    containerColor: Color = MaterialTheme.colorScheme.background,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(topBar = topBar,
         bottomBar = bottomBar,
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = containerColor,
         content = {innerPadding ->
             content(innerPadding) })
 }
