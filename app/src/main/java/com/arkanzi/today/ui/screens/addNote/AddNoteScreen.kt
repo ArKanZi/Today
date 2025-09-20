@@ -7,12 +7,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.material3.MenuAnchorType.Companion.PrimaryNotEditable
@@ -20,7 +26,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.DefaultShadowColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +64,13 @@ fun AddNotesScreen(
     val viewModel: AddNoteViewModel = viewModel(
         factory = AddNoteViewModelFactory(noteRepository, calendarTypeRepository)
     )
+    val calendarTypes by viewModel.calendarTypes.collectAsState()
+    LaunchedEffect(calendarTypes) {
+        if (calendarTypes.isNotEmpty()) {
+            viewModel.calendarTypeSelected = calendarTypes.first().name
+            viewModel.calendarTypeId = calendarTypes.first().id
+        }
+    }
 
     DefaultLayout(
         topBar = {
@@ -91,19 +107,34 @@ fun AddNotesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 18.dp),
+                .padding(horizontal = 18.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 //            Title
             InputFields(
                 value = viewModel.title,
-                onValueChange = { viewModel.title = it },
+                onValueChange = { viewModel.title = it
+                                viewModel.titleError = false },
                 icon = R.drawable.ic_typography,
                 description = "",
                 label = "Title",
                 tint = Color(0xFF3DB2C5),
+                singleLine = true,
+                maxLength = 50,
+                isError = viewModel.titleError,
+                trailingIcon = if (viewModel.titleError) {
+                    {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_error),
+                            contentDescription = "Error",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else null
 
-                )
+            )
 //            Place
             InputFields(
                 value = viewModel.place,
@@ -112,8 +143,10 @@ fun AddNotesScreen(
                 description = "",
                 label = "Place",
                 tint = Color(0xFFdb7ccb),
+                singleLine = true,
+                maxLength = 50
 
-                )
+            )
 //            Starting Date and Time
             Row(modifier = Modifier.fillMaxWidth()) {
                 Box {
@@ -153,7 +186,7 @@ fun AddNotesScreen(
                         })
                     InputFields(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1.1f)
                             .clickable { viewModel.showStartTimePicker = true },
                         value = displayTime(viewModel.startTime),
                         onValueChange = { viewModel.startTime = it.toLong() },
@@ -215,7 +248,7 @@ fun AddNotesScreen(
                         })
                     InputFields(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1.1f)
                             .clickable { viewModel.showEndTimePicker = true },
                         value = displayTime(viewModel.endTime),
                         onValueChange = { viewModel.endTime = it.toLong() },
@@ -246,8 +279,10 @@ fun AddNotesScreen(
                 description = "",
                 label = "Notes",
                 tint = Color(0xFFE88196),
+                maxLines = 50,
+                maxLength = 150
 
-                )
+            )
 //            Priority
             Row {
                 IconContainer(
@@ -333,10 +368,11 @@ fun AddNotesScreen(
                     }
                 }
             }
-//            Alarm
+//            Notification
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically)
+                verticalAlignment = Alignment.CenterVertically
+            )
             {
                 IconContainer(
                     icon = R.drawable.ic_notification,
@@ -364,17 +400,52 @@ fun AddNotesScreen(
                 }
             }
 
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    viewModel.onSaveNote()
-                    backStack.removeLastOrNull()
 
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .padding(horizontal = 24.dp)
+                    .shadow(
+                        1.dp,
+                        shape = CircleShape,
+                        ambientColor = DefaultShadowColor,
+                        spotColor = DefaultShadowColor
+                    )
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF5CE487),
+                                Color(0xFF2EB4C8)
+
+                            )
+                        )
+                    )
+                    .clickable {
+                        viewModel.onSaveNote()
+                        if(!viewModel.titleError){
+                            backStack.removeLastOrNull()
+                        }
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Text("Save Note")
-
+                Row(modifier = Modifier, verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Save",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "All Details",
+                        tint = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
+            Spacer(modifier = Modifier.size(10.dp))
         }
     }
 }

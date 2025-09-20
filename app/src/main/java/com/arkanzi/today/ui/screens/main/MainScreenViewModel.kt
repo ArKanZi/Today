@@ -15,8 +15,19 @@ import kotlinx.coroutines.launch
 
 class MainScreenViewModel(private val noteRepository: NoteRepository): ViewModel() {
     val notes: StateFlow<List<Note>> = noteRepository.allNotes
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
+    val upcomingNotesCount: StateFlow<Int> = noteRepository.getTotalUpcomingCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
+
+    val upcomingNotes: StateFlow<List<Note>> = noteRepository.getUpcoming5()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
+
+    val dueNotes: StateFlow<List<Note>> = noteRepository.getDue5()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
+
+    val historyNotes: StateFlow<List<Note>> = noteRepository.getHistory5()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
 
     var noteExtraOptionsId by mutableStateOf(false)

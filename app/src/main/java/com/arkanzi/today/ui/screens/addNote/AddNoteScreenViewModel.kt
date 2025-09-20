@@ -1,6 +1,5 @@
 package com.arkanzi.today.ui.screens.addNote
 
-import android.util.Log
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,13 +8,14 @@ import com.arkanzi.today.model.Note
 import com.arkanzi.today.repository.CalendarTypeRepository
 import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.util.combineDateAndTime
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.Calendar
 
 class AddNoteViewModel(
     private val noteRepository: NoteRepository,
@@ -25,28 +25,21 @@ class AddNoteViewModel(
     val calendarTypes: StateFlow<List<CalendarType>> =
         calendarTypeRepository.allCalendarType.stateIn(
             viewModelScope,
-            SharingStarted.Lazily,
+            SharingStarted.WhileSubscribed(5_000),
             emptyList()
         )
-    init {
-        viewModelScope.launch {
-            calendarTypes.collect { types ->
-                if (types.isNotEmpty()) {
-                    calendarTypeSelected = types.first().name
-                    calendarTypeId = types.first().id
-                }
-            }
-        }
-    }
-
 
     var title by mutableStateOf("")
+    var titleError by mutableStateOf(false)
     var place by mutableStateOf("")
-    var startDate by mutableLongStateOf(LocalDate.now().atStartOfDay(ZoneOffset.UTC)
-        .toInstant().toEpochMilli())
-    var endDate by mutableLongStateOf(System.currentTimeMillis())
-    var startTime by mutableLongStateOf(System.currentTimeMillis())
-    var endTime by mutableLongStateOf(System.currentTimeMillis())
+    var startDate by mutableLongStateOf(
+        LocalDate.now().atStartOfDay(ZoneOffset.UTC)
+            .toInstant().toEpochMilli()
+    )
+    private val _currentTime = System.currentTimeMillis()
+    var endDate by mutableLongStateOf(_currentTime)
+    var startTime by mutableLongStateOf(_currentTime)
+    var endTime by mutableLongStateOf(_currentTime + 3600000)
     var noteContent by mutableStateOf("")
     var priority by mutableStateOf("Normal")
     var calendarTypeSelected by mutableStateOf("")
@@ -67,24 +60,35 @@ class AddNoteViewModel(
     var isAlarmSet by mutableStateOf(false)
 
 
+    fun onSaveNote(onSuccess: () -> Unit = {}) {
+        if (title.isNotBlank()) {
+            val newNote = Note(
+                title = title,
+                place = place,
+                startDateTime = combineDateAndTime(startDate, startTime),
+                endDateTime = combineDateAndTime(endDate, endTime),
+                note = noteContent,
+                priority = priority,
+                calendarTypeId = calendarTypeId,
+                createdAt = System.currentTimeMillis(),
+                isCompleted = isCompleted
+            )
 
-
-    fun onSaveNote() {
-
-        val newNote = Note(
-            title = title,
-            place = place,
-            startDateTime = combineDateAndTime(startDate, startTime),
-            endDateTime = combineDateAndTime(endDate, endTime),
-            note = noteContent,
-            priority = priority,
-            calendarTypeId = calendarTypeId,
-            createdAt = System.currentTimeMillis(),
-            isCompleted = isCompleted
-        )
-        viewModelScope.launch {
-            noteRepository.insert(newNote)
-
+            viewModelScope.launch(Dispatchers.IO) { // ← Use IO dispatcher
+                try {
+                    noteRepository.insert(newNote)
+                    withContext(Dispatchers.Main) { // Switch back for UI updates
+                        onSuccess() // Callback for navigation
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        // Handle error if needed
+                        titleError = true
+                    }
+                }
+            }
+        } else {
+            titleError = true
         }
     }
 }

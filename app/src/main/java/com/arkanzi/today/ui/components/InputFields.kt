@@ -1,7 +1,6 @@
 package com.arkanzi.today.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +22,9 @@ import com.arkanzi.today.R
 @Composable
 fun InputFields(
     modifier: Modifier = Modifier,
+    textFieldModifier: Modifier = Modifier
+        .clip(shape = RoundedCornerShape(8.dp))
+        .background(MaterialTheme.colorScheme.inverseOnSurface),
     icon: Int = R.drawable.ic_notes_extra,
     isIcon: Boolean = true,
     description: String = "",
@@ -33,14 +35,18 @@ fun InputFields(
     isEnabled: Boolean = true,
     trailingIcon: @Composable (() -> Unit)? = null,
     value: String = "",
+    maxLines: Int = Int.MAX_VALUE,
+    maxLength: Int = Int.MAX_VALUE,
+    isError: Boolean = false,
     onValueChange: (String) -> Unit = { },
 ) {
+
     Row(
         modifier = modifier
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if(isIcon){
+        if (isIcon) {
             Column(modifier = Modifier.padding(end = 8.dp)) {
                 IconContainer(
                     icon = icon,
@@ -51,21 +57,23 @@ fun InputFields(
                 )
             }
         }
-        Column(modifier = Modifier
-            .clip(shape = RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
-            ) {
+        Column(
+            modifier = textFieldModifier
+        ) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextField(
                     value = value,
-                    onValueChange = { onValueChange(it) },
+                    onValueChange = { newValue ->
+                        // Limit characters to maxLength
+                        if (newValue.length <= maxLength) {
+                            onValueChange(newValue)
+                        }
+                    },
                     label = { Text(label, style = MaterialTheme.typography.bodySmall) },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = singleLine,
                     readOnly = readOnly,
                     enabled = isEnabled,
-
-
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -77,8 +85,12 @@ fun InputFields(
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     trailingIcon = trailingIcon,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = maxLines,
+                    isError = isError
+
+
+                    )
             }
         }
 
@@ -89,8 +101,8 @@ fun InputFields(
 @Composable
 fun InputFieldsPreview() {
     InputFields(
-        icon=R.drawable.ic_notes,
-        isIcon = false,
+        icon = R.drawable.ic_notes,
+        isIcon = true,
         label = "Add a note",
         modifier = Modifier.background(Color.White),
         tint = Color(0xFF8695BE),

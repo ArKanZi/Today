@@ -1,4 +1,3 @@
-// CalendarTypeDao.kt
 package com.arkanzi.today.data.dao
 
 import androidx.room.Dao
@@ -17,6 +16,9 @@ interface CalendarTypeDao {
     @Query("SELECT * FROM calendar_types WHERE name = :name LIMIT 1")
     suspend fun findByName(name: String): CalendarType?
 
+    @Query("SELECT * FROM calendar_types WHERE id = :id LIMIT 1")
+    suspend fun findById(id: Long): CalendarType?
+
     @Query("SELECT * FROM calendar_types ORDER BY name ASC")
     fun getAll(): Flow<List<CalendarType>>
 
@@ -25,7 +27,7 @@ interface CalendarTypeDao {
         val existing = findByName(name)
         if (existing != null) return existing
         val id = insertIgnore(CalendarType(name = name))
-        return if (id > 0) CalendarType(id = id, name = name)
+        return if (id > 0) CalendarType(name = name)
         else findByName(name)!! // race-safe if created concurrently
     }
 }

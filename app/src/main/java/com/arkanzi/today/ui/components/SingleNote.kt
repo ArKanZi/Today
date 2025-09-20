@@ -38,11 +38,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.arkanzi.today.App
 import com.arkanzi.today.R
+import com.arkanzi.today.model.Note
+import com.arkanzi.today.repository.NoteRepository
+import com.arkanzi.today.util.UserPreferences
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -53,6 +59,8 @@ fun SingleNote(
     startingTime: String,
     isRevealed: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    noteDelete: Note,
+    noteRepository: NoteRepository,
     onClick:() -> Unit
 ) {
 
@@ -104,7 +112,13 @@ fun SingleNote(
                 modifier = Modifier
                     .size(36.dp)
                     .padding(2.dp),
-                tint = Color(0xFFD07589)
+                tint = Color(0xFFD07589),
+                onClick = {
+                    scope.launch {
+                        noteRepository.delete(noteDelete)
+                        singleNoteOffSet.animateTo(0f)
+                    }
+                }
             )
         }
         Surface(
@@ -151,12 +165,14 @@ fun SingleNote(
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
                         .padding(horizontal = 8.dp)
-                        .weight(2f).clickable{onClick}
+                        .weight(2f).clickable(onClick = onClick)
                 ) {
                     Text(
                         title,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Normal
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
 
                     )
                 }
@@ -206,5 +222,19 @@ fun SingleNote(
 @Preview(showBackground = true)
 @Composable
 fun SingleNotePreview() {
-    SingleNote(true, "Something", "10:00AM", isRevealed = false,{},{})
+    val context = LocalContext.current
+    val db = App.DatabaseProvider.getDatabase(context)
+    val noteRepository = remember { NoteRepository(db.noteDao()) }
+    val note = Note(
+        id = 1,
+        title = "Meeting with Team",
+        place = "Office",
+        startDateTime = 1672531200000, // Example timestamp
+        endDateTime = 1672639200000,   // Example timestamp
+        note = "Discuss project milestones and deadlines.",
+        priority = "High",
+        calendarTypeId = 0,
+        createdAt = 1672444800000, // Example timestamp
+    )
+    SingleNote(true, "Something", "10:00AM", isRevealed = false,{},note,noteRepository,{})
 }
