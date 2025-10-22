@@ -34,7 +34,6 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.R
 import com.arkanzi.today.ui.components.IconContainer
-import com.arkanzi.today.ui.components.NavigationBarCustom
 import com.arkanzi.today.ui.components.TopAppBarCustom
 import com.arkanzi.today.ui.layout.DefaultLayout
 import com.arkanzi.today.ui.navigation.MainScreenKey
@@ -76,7 +75,7 @@ fun SettingsScreen(
                 }
             })
     }){
-        Column(modifier = Modifier.padding(it).padding(vertical = 18.dp)) {
+        Column(modifier = Modifier.padding(it).padding(horizontal = 18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -90,7 +89,7 @@ fun SettingsScreen(
                     onClick = {}
                 )
                 Column(modifier = Modifier.weight(3f)) { Text("Dark Theme") }
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                     Switch(
                         checked = isDarkTheme,
                         onCheckedChange = {newvalue ->

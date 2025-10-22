@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -41,10 +42,11 @@ import com.arkanzi.today.ui.layout.DefaultLayout
 import com.arkanzi.today.ui.navigation.EditNoteScreenKey
 import com.arkanzi.today.ui.navigation.MainScreenKey
 import com.arkanzi.today.ui.navigation.NoteDetailScreenKey
-import com.arkanzi.today.ui.screens.editNote.EditNoteScreen
+import com.arkanzi.today.ui.navigation.ViewAllNotesScreenKey
 import com.arkanzi.today.ui.screens.main.components.ExpandableNotesSection
 import com.arkanzi.today.ui.theme.ComfortaaFontFamily
 import com.arkanzi.today.util.UserPreferences
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(
@@ -57,10 +59,10 @@ fun MainScreen(
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val expandedSections by viewModel.expandedSections.collectAsState()
     val expandedNoteId by viewModel.expandedNoteId.collectAsState()
-    val upcomingNotes by viewModel.upcomingNotes.collectAsState()
+    val upcomingNotes by viewModel.upcoming6Notes.collectAsState()
     val upcomingNotesCount by viewModel.upcomingNotesCount.collectAsState()
-    val dueNotes by viewModel.dueNotes.collectAsState()
-    val historyNotes by viewModel.historyNotes.collectAsState()
+    val dueNotes by viewModel.due6Notes.collectAsState()
+    val historyNotes by viewModel.history6Notes.collectAsState()
     val deletingNoteIds by viewModel.deletingNoteIds.collectAsState()
     DefaultLayout(
         topBar = {
@@ -151,7 +153,11 @@ fun MainScreen(
                                 onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
                                 onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
                                 onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                                onFullListClick = {
+                                    viewModel.viewModelScope.launch {
+                                        backStack.add(ViewAllNotesScreenKey("upcoming"))
+                                    } }
                             )
                         }
                     }
@@ -170,7 +176,11 @@ fun MainScreen(
                                 onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
                                 onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
                                 onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                                onFullListClick = {
+                                    viewModel.viewModelScope.launch {
+                                        backStack.add(ViewAllNotesScreenKey("due"))
+                                    } }
                             )
                         }
                     }
@@ -189,7 +199,11 @@ fun MainScreen(
                                 onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
                                 onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
                                 onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                                onFullListClick = {
+                                    viewModel.viewModelScope.launch {
+                                        backStack.add(ViewAllNotesScreenKey("history"))
+                                    } }
                             )
                         }
                     }

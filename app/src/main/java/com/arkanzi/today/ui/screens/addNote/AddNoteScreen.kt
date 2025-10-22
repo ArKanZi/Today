@@ -98,8 +98,7 @@ fun AddNotesScreen(
                     )
                 }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier

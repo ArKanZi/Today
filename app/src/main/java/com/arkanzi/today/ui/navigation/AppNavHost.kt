@@ -25,6 +25,7 @@ import com.arkanzi.today.ui.screens.main.MainScreen
 import com.arkanzi.today.ui.screens.noteDetail.NoteDetailScreen
 import com.arkanzi.today.ui.screens.settings.SettingsScreen
 import com.arkanzi.today.ui.screens.stats.StatsScreen
+import com.arkanzi.today.ui.screens.viewAllNotes.ViewAllNotesScreen
 import com.arkanzi.today.util.UserPreferences
 
 @Composable
@@ -77,6 +78,10 @@ fun AppNavHost() {
                 }
             ) {
                 EditNoteScreen(backStack, noteRepository, calendarTypeRepository, note = it.note)
+            }
+
+            entry<ViewAllNotesScreenKey> {
+                ViewAllNotesScreen(backStack = backStack, noteRepository = noteRepository, notesType = it.name)
             }
             entry<StatsScreenKey> {
                 StatsScreen(backStack, noteRepository)

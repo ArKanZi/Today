@@ -20,13 +20,15 @@ class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
     val upcomingNotesCount: StateFlow<Int> = noteRepository.getTotalUpcomingCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
 
-    val upcomingNotes: StateFlow<List<Note>> = noteRepository.getUpcoming5()
+    val upcoming6Notes: StateFlow<List<Note>> = noteRepository.get6Upcoming()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
-    val dueNotes: StateFlow<List<Note>> = noteRepository.getDue5()
+    val due6Notes: StateFlow<List<Note>> = noteRepository.get6Due()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
-    val historyNotes: StateFlow<List<Note>> = noteRepository.getHistory5()
+
+
+    val history6Notes: StateFlow<List<Note>> = noteRepository.get6History()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
 
@@ -41,6 +43,7 @@ class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
 
 
     private var _noteToDelete: Note? = null
+
 
     fun toggleCompleted(note: Note) {
         val updatedNote = note.copy(isCompleted = !note.isCompleted)

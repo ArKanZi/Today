@@ -8,7 +8,7 @@ class MainViewmodelFactory(
     private val noteRepository: NoteRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if(modelClass.isAssignableFrom(MainViewmodel::class.java)) {
+        if (modelClass.isAssignableFrom(MainViewmodel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return MainViewmodel(noteRepository) as T
         }
