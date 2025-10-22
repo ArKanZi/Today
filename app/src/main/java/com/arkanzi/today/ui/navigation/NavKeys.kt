@@ -10,3 +10,4 @@ import kotlinx.serialization.Serializable
 @Serializable object SettingsScreenKey : NavKey
 @Serializable object CalendarScreenKey : NavKey
 @Serializable data class NoteDetailScreenKey(val note: Note) : NavKey
+@Serializable data class EditNoteScreenKey(val note: Note) : NavKey

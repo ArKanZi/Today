@@ -20,6 +20,7 @@ import com.arkanzi.today.repository.CalendarTypeRepository
 import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.ui.screens.addNote.AddNotesScreen
 import com.arkanzi.today.ui.screens.calendar.CalendarScreen
+import com.arkanzi.today.ui.screens.editNote.EditNoteScreen
 import com.arkanzi.today.ui.screens.main.MainScreen
 import com.arkanzi.today.ui.screens.noteDetail.NoteDetailScreen
 import com.arkanzi.today.ui.screens.settings.SettingsScreen
@@ -58,6 +59,24 @@ fun AppNavHost() {
                 }
             ) {
                 AddNotesScreen(backStack, noteRepository, calendarTypeRepository)
+            }
+
+            entry<EditNoteScreenKey>(
+                metadata = NavDisplay.transitionSpec {
+                    // Slide up from bottom when entering
+                    slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(400, easing = EaseOutQuart)
+                    ) togetherWith ExitTransition.KeepUntilTransitionsFinished
+                } + NavDisplay.popTransitionSpec {
+                    // Slide down to bottom when leaving
+                    EnterTransition.None togetherWith slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(400, easing = EaseInQuart)
+                    )
+                }
+            ) {
+                EditNoteScreen(backStack, noteRepository, calendarTypeRepository, note = it.note)
             }
             entry<StatsScreenKey> {
                 StatsScreen(backStack, noteRepository)

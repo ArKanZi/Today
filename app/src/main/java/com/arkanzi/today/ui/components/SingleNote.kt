@@ -1,6 +1,6 @@
 package com.arkanzi.today.ui.components
 
-
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,22 +49,21 @@ import com.arkanzi.today.App
 import com.arkanzi.today.R
 import com.arkanzi.today.model.Note
 import com.arkanzi.today.repository.NoteRepository
-import com.arkanzi.today.util.UserPreferences
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
 fun SingleNote(
+    note: Note,
     isCompleted: Boolean,
     title: String,
     startingTime: String,
     isRevealed: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    noteDelete: Note,
-    noteRepository: NoteRepository,
-    onClick:() -> Unit
+    onDeleteRequest: (Note) -> Unit,
+    onEditRequest: (Note) -> Unit = {},
+    onClick: () -> Unit
 ) {
-
     var singleNoteOptionsWidth by remember {
         mutableFloatStateOf(0f)
     }
@@ -81,11 +81,13 @@ fun SingleNote(
             singleNoteOffSet.animateTo(0f)
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min),
     ) {
+        // Action buttons (Edit and Delete)
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -101,6 +103,7 @@ fun SingleNote(
                     .padding(2.dp),
                 tint = Color(0xFF798CBE),
                 onClick = {
+                    onEditRequest(note)
                     scope.launch {
                         singleNoteOffSet.animateTo(0f)
                     }
@@ -114,13 +117,15 @@ fun SingleNote(
                     .padding(2.dp),
                 tint = Color(0xFFD07589),
                 onClick = {
+                    onDeleteRequest(note)
                     scope.launch {
-                        noteRepository.delete(noteDelete)
                         singleNoteOffSet.animateTo(0f)
                     }
                 }
             )
         }
+
+        // Main note content
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -132,7 +137,6 @@ fun SingleNote(
                                 val newOffset = (singleNoteOffSet.value + dragAmount)
                                     .coerceIn(-singleNoteOptionsWidth, 0f)
                                 singleNoteOffSet.snapTo(newOffset)
-
                             }
                         },
                         onDragEnd = {
@@ -149,7 +153,6 @@ fun SingleNote(
                                     }
                                 }
                             }
-
                         }
                     )
                 }) {
@@ -157,6 +160,7 @@ fun SingleNote(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
+                    .padding(vertical = 12.dp)
             ) {
                 Column(modifier = Modifier.align(alignment = Alignment.CenterVertically)) {
                     CustomCircleCheckbox(isCompleted, { onCheckedChange(it) }, size = 24)
@@ -164,22 +168,39 @@ fun SingleNote(
                 Column(
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
-                        .padding(horizontal = 8.dp)
-                        .weight(2f).clickable(onClick = onClick)
+                        .padding(horizontal = 12.dp)
+                        .weight(1f)
+                        .clickable(onClick = onClick)
                 ) {
                     Text(
-                        title,
+                        text = title,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Normal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-
                     )
                 }
+
+//                Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+//                    Box(
+//                        modifier = Modifier
+//                            .padding(horizontal = 10.dp)
+//                            .size(5.dp)
+//                            .clip(CircleShape)
+//                            .background(
+//                                when (note.priority) {
+//                                    "High" -> Color.Red
+//                                    "Normal" -> Color.Green
+//                                    else -> Color.Yellow
+//                                }
+//                            )
+//                            .animateContentSize()
+//                    )
+//                }
                 Column(modifier = Modifier.align(Alignment.CenterVertically)) {
                     Text(
-                        startingTime,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                        text = startingTime,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Normal,
                         color = Color.Gray
                     )
@@ -188,19 +209,19 @@ fun SingleNote(
                     onClick = onClick,
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
-                        .size(20.dp)
-                        .clip(
-                            CircleShape
-                        )
+                        .size(24.dp)
+                        .clip(CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "All Details",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
+                        contentDescription = "View Details",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
+
+            // Overlay to close swipe when tapped
             if (singleNoteOffSet.value < 0f) {
                 Box(
                     modifier = Modifier
@@ -216,7 +237,6 @@ fun SingleNote(
             }
         }
     }
-
 }
 
 @Preview(showBackground = true)
@@ -236,5 +256,15 @@ fun SingleNotePreview() {
         calendarTypeId = 0,
         createdAt = 1672444800000, // Example timestamp
     )
-    SingleNote(true, "Something", "10:00AM", isRevealed = false,{},note,noteRepository,{})
+    SingleNote(
+        note = note,
+        true,
+        "Something",
+        "10:00AM",
+        isRevealed = false,
+        {},
+        {},
+        { },
+        {},
+    )
 }

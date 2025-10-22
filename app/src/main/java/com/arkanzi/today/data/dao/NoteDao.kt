@@ -26,14 +26,14 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM notes Where endDateTime > :currentTime AND isCompleted = 0")
     fun getTotalCountOfUpcomingNotes(currentTime:Long): Flow<Int>
 
-    @Query("SELECT * FROM notes Where endDateTime > :currentTime AND isCompleted = 0 ORDER BY startDateTime ASC LIMIT 5")
-    fun get5UpcomingNotes(currentTime: Long): Flow<List<Note>>
+    @Query("SELECT * FROM notes Where endDateTime > :currentTime AND isCompleted = 0 ORDER BY startDateTime ASC LIMIT 6")
+    fun get6UpcomingNotes(currentTime: Long): Flow<List<Note>>
 
-    @Query("SELECT * FROM notes Where endDateTime < :currentTime AND isCompleted = 0 ORDER BY startDateTime ASC LIMIT 5")
-    fun get5DueNotes(currentTime: Long): Flow<List<Note>>
+    @Query("SELECT * FROM notes Where endDateTime < :currentTime AND isCompleted = 0 ORDER BY startDateTime ASC LIMIT 6")
+    fun get6DueNotes(currentTime: Long): Flow<List<Note>>
 
-    @Query("SELECT * FROM notes Where isCompleted = 1 ORDER BY startDateTime DESC LIMIT 5")
-    fun get5HistoryNotes(): Flow<List<Note>>
+    @Query("SELECT * FROM notes Where isCompleted = 1 ORDER BY startDateTime DESC LIMIT 6")
+    fun get6HistoryNotes(): Flow<List<Note>>
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     suspend fun getNoteById(id: Long): Note?

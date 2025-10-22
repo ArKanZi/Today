@@ -13,13 +13,13 @@ class NoteRepository(private val noteDao: NoteDao) {
         noteDao.getTotalCountOfUpcomingNotes(System.currentTimeMillis())
 
     fun getUpcoming5(): Flow<List<Note>> =
-        noteDao.get5UpcomingNotes(System.currentTimeMillis())
+        noteDao.get6UpcomingNotes(System.currentTimeMillis())
 
     fun getDue5(): Flow<List<Note>> =
-        noteDao.get5DueNotes(System.currentTimeMillis())
+        noteDao.get6DueNotes(System.currentTimeMillis())
 
     fun getHistory5(): Flow<List<Note>> =
-        noteDao.get5HistoryNotes()
+        noteDao.get6HistoryNotes()
 
     suspend fun insert(note: Note) = withContext(Dispatchers.IO) { noteDao.insert(note) }
 

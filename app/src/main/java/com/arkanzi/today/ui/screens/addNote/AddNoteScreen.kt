@@ -35,7 +35,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -65,10 +64,13 @@ fun AddNotesScreen(
         factory = AddNoteViewModelFactory(noteRepository, calendarTypeRepository)
     )
     val calendarTypes by viewModel.calendarTypes.collectAsState()
+
     LaunchedEffect(calendarTypes) {
         if (calendarTypes.isNotEmpty()) {
-            viewModel.calendarTypeSelected = calendarTypes.first().name
-            viewModel.calendarTypeId = calendarTypes.first().id
+            viewModel.updateCalendarType(
+                calendarTypes.first().name,
+                calendarTypes.first().id
+            )
         }
     }
 
@@ -78,17 +80,13 @@ fun AddNotesScreen(
                 leftContent = {
                     IconButton(
                         onClick = { backStack.removeLastOrNull() },
-                        modifier = Modifier
-                            .size(24.dp)
-
+                        modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cross),
-                            contentDescription = "Add To Do",
+                            contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .size(24.dp)
-
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 },
@@ -111,11 +109,10 @@ fun AddNotesScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-//            Title
+            // Title
             InputFields(
                 value = viewModel.title,
-                onValueChange = { viewModel.title = it
-                                viewModel.titleError = false },
+                onValueChange = viewModel::updateTitle, // Use ViewModel function
                 icon = R.drawable.ic_typography,
                 description = "",
                 label = "Title",
@@ -133,21 +130,21 @@ fun AddNotesScreen(
                         )
                     }
                 } else null
-
             )
-//            Place
+
+            // Place
             InputFields(
                 value = viewModel.place,
-                onValueChange = { viewModel.place = it },
+                onValueChange = viewModel::updatePlace, // Use ViewModel function
                 icon = R.drawable.ic_location,
                 description = "",
                 label = "Place",
                 tint = Color(0xFFdb7ccb),
                 singleLine = true,
                 maxLength = 50
-
             )
-//            Starting Date and Time
+
+            // Starting Date and Time
             Row(modifier = Modifier.fillMaxWidth()) {
                 Box {
                     IconContainer(
@@ -168,9 +165,9 @@ fun AddNotesScreen(
                     InputFields(
                         modifier = Modifier
                             .weight(2f)
-                            .clickable { viewModel.showStartDatePicker = true },
+                            .clickable { viewModel.showStartDatePicker() }, // Use ViewModel function
                         value = displayDate(viewModel.startDate),
-                        onValueChange = { viewModel.startDate = it.toLong() },
+                        onValueChange = { }, // No direct change needed
                         isIcon = false,
                         isEnabled = false,
                         label = "Starting Date and Time",
@@ -179,17 +176,16 @@ fun AddNotesScreen(
                     )
                     DatePickerDialogCustom(
                         show = viewModel.showStartDatePicker,
-                        onDismiss = { viewModel.showStartDatePicker = false },
+                        onDismiss = viewModel::hideStartDatePicker, // Use ViewModel function
                         initialSelectedDateMillis = viewModel.startDate,
-                        onDateSelected = { timestamp ->
-                            viewModel.startDate = timestamp
-                        })
+                        onDateSelected = viewModel::updateStartDate // Use ViewModel function
+                    )
                     InputFields(
                         modifier = Modifier
                             .weight(1.1f)
-                            .clickable { viewModel.showStartTimePicker = true },
+                            .clickable { viewModel.showStartTimePicker() }, // Use ViewModel function
                         value = displayTime(viewModel.startTime),
-                        onValueChange = { viewModel.startTime = it.toLong() },
+                        onValueChange = { }, // No direct change needed
                         isEnabled = false,
                         isIcon = false,
                         label = "",
@@ -198,18 +194,18 @@ fun AddNotesScreen(
                     )
                     TimePickerDialogCustom(
                         viewModel.showStartTimePicker,
-                        { viewModel.showStartTimePicker = false },
+                        viewModel::hideStartTimePicker, // Use ViewModel function
                         viewModel.startTime,
                         false,
-                        "Starting Time",
-                        { timestamp ->
-                            viewModel.startTime = timestamp
-                            Log.d("AddNoteScreen", "Selected start time: $timestamp")
-                        })
+                        "Starting Time"
+                    ) { timestamp ->
+                        viewModel.updateStartTime(timestamp) // Use ViewModel function
+                        Log.d("AddNoteScreen", "Selected start time: $timestamp")
+                    }
                 }
-
             }
-//            Ending Date and Time
+
+            // Ending Date and Time
             Row(modifier = Modifier.fillMaxWidth()) {
                 Box {
                     IconContainer(
@@ -229,9 +225,9 @@ fun AddNotesScreen(
                     InputFields(
                         modifier = Modifier
                             .weight(2f)
-                            .clickable { viewModel.showEndDatePicker = true },
+                            .clickable { viewModel.showEndDatePicker() }, // Use ViewModel function
                         value = displayDate(viewModel.endDate),
-                        onValueChange = { viewModel.endDate = it.toLong() },
+                        onValueChange = { }, // No direct change needed
                         isEnabled = false,
                         isIcon = false,
                         label = "Ending Date and Time",
@@ -240,18 +236,17 @@ fun AddNotesScreen(
                     )
                     DatePickerDialogCustom(
                         show = viewModel.showEndDatePicker,
-                        onDismiss = { viewModel.showEndDatePicker = false },
+                        onDismiss = viewModel::hideEndDatePicker, // Use ViewModel function
                         initialSelectedDateMillis = viewModel.startDate,
                         selectableDates = CustomSelectableDates(viewModel.startDate),
-                        onDateSelected = { timestamp ->
-                            viewModel.endDate = timestamp
-                        })
+                        onDateSelected = viewModel::updateEndDate // Use ViewModel function
+                    )
                     InputFields(
                         modifier = Modifier
                             .weight(1.1f)
-                            .clickable { viewModel.showEndTimePicker = true },
+                            .clickable { viewModel.showEndTimePicker() }, // Use ViewModel function
                         value = displayTime(viewModel.endTime),
-                        onValueChange = { viewModel.endTime = it.toLong() },
+                        onValueChange = { }, // No direct change needed
                         isEnabled = false,
                         isIcon = false,
                         label = "",
@@ -260,30 +255,30 @@ fun AddNotesScreen(
                     )
                     TimePickerDialogCustom(
                         viewModel.showEndTimePicker,
-                        { viewModel.showEndTimePicker = false },
+                        viewModel::hideEndTimePicker, // Use ViewModel function
                         viewModel.endTime,
                         false,
-                        "Starting Time",
-                        { timestamp ->
-                            viewModel.endTime = timestamp
-                            Log.d("AddNoteScreen", "Selected end time: $timestamp")
-                        })
-
+                        "Ending Time"
+                    ) { timestamp ->
+                        viewModel.updateEndTime(timestamp) // Use ViewModel function
+                        Log.d("AddNoteScreen", "Selected end time: $timestamp")
+                    }
                 }
             }
-//            Notes
+
+            // Notes
             InputFields(
                 value = viewModel.noteContent,
-                onValueChange = { viewModel.noteContent = it },
+                onValueChange = viewModel::updateNoteContent, // Use ViewModel function
                 icon = R.drawable.ic_notes,
                 description = "",
                 label = "Notes",
                 tint = Color(0xFFE88196),
                 maxLines = 50,
                 maxLength = 150
-
             )
-//            Priority
+
+            // Priority
             Row {
                 IconContainer(
                     icon = R.drawable.ic_flag,
@@ -294,14 +289,14 @@ fun AddNotesScreen(
                 )
                 ExposedDropdownMenuBox(
                     expanded = viewModel.priorityExpanded,
-                    onExpandedChange = { viewModel.priorityExpanded = !viewModel.priorityExpanded }
+                    onExpandedChange = { viewModel.togglePriorityDropdown() } // Use ViewModel function
                 ) {
                     InputFields(
                         modifier = Modifier
                             .weight(1f)
                             .menuAnchor(PrimaryNotEditable, true),
                         value = viewModel.priority,
-                        onValueChange = { viewModel.priority = it },
+                        onValueChange = { }, // No direct change needed
                         readOnly = true,
                         isIcon = false,
                         label = "Priority",
@@ -311,21 +306,21 @@ fun AddNotesScreen(
                     )
                     ExposedDropdownMenu(
                         expanded = viewModel.priorityExpanded,
-                        onDismissRequest = { viewModel.priorityExpanded = false }
+                        onDismissRequest = { viewModel.togglePriorityDropdown() } // Use ViewModel function
                     ) {
                         viewModel.priorityOptions.forEach { option ->
                             DropdownMenuItem(
                                 text = { Text(option) },
                                 onClick = {
-                                    viewModel.priority = option
-                                    viewModel.priorityExpanded = false
+                                    viewModel.updatePriority(option) // Use ViewModel function
                                 }
                             )
                         }
                     }
                 }
             }
-//            Calendar Type
+
+            // Calendar Type
             Row {
                 IconContainer(
                     icon = R.drawable.ic_calendar,
@@ -336,44 +331,45 @@ fun AddNotesScreen(
                 )
                 ExposedDropdownMenuBox(
                     expanded = viewModel.calendarExpanded,
-                    onExpandedChange = { viewModel.calendarExpanded = !viewModel.calendarExpanded }
+                    onExpandedChange = { viewModel.toggleCalendarDropdown() } // Use ViewModel function
                 ) {
                     InputFields(
                         modifier = Modifier
                             .weight(1f)
                             .menuAnchor(PrimaryNotEditable, true),
                         value = viewModel.calendarTypeSelected,
-                        onValueChange = { viewModel.calendarTypeSelected = it },
+                        onValueChange = { }, // No direct change needed
                         readOnly = true,
                         isIcon = false,
                         label = "Calendar Type",
                         tint = Color.Gray,
                         singleLine = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(viewModel.priorityExpanded) }
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(viewModel.calendarExpanded) } // Fixed typo
                     )
                     ExposedDropdownMenu(
                         expanded = viewModel.calendarExpanded,
-                        onDismissRequest = { viewModel.calendarExpanded = false }
+                        onDismissRequest = { viewModel.toggleCalendarDropdown() } // Use ViewModel function
                     ) {
-                        viewModel.calendarTypes.collectAsStateWithLifecycle(initialValue = emptyList())
-                            .value.forEach { calenderType ->
-                                DropdownMenuItem(
-                                    text = { Text(calenderType.name) },
-                                    onClick = {
-                                        viewModel.calendarTypeId = calenderType.id
-                                        viewModel.calendarExpanded = false
-                                    }
-                                )
-                            }
+                        calendarTypes.forEach { calendarType -> // Use direct state instead of collecting again
+                            DropdownMenuItem(
+                                text = { Text(calendarType.name) },
+                                onClick = {
+                                    viewModel.updateCalendarType(
+                                        calendarType.name,
+                                        calendarType.id
+                                    ) // Use ViewModel function
+                                }
+                            )
+                        }
                     }
                 }
             }
-//            Notification
+
+            // Notification
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
-            )
-            {
+            ) {
                 IconContainer(
                     icon = R.drawable.ic_notification,
                     description = "",
@@ -381,11 +377,13 @@ fun AddNotesScreen(
                     tint = Color(0xFF2FE16A),
                     onClick = {}
                 )
-                Column(modifier = Modifier.weight(3f)) { Text("Notification") }
+                Column(modifier = Modifier.weight(3f)) {
+                    Text("Notification")
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Switch(
                         checked = viewModel.isAlarmSet,
-                        onCheckedChange = { viewModel.isAlarmSet = it },
+                        onCheckedChange = { viewModel.toggleAlarm() }, // Use ViewModel function
                         thumbContent = if (viewModel.isAlarmSet) {
                             {
                                 Icon(
@@ -396,11 +394,12 @@ fun AddNotesScreen(
                             }
                         } else {
                             null
-                        })
+                        }
+                    )
                 }
             }
 
-
+            // Save Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -418,19 +417,23 @@ fun AddNotesScreen(
                             listOf(
                                 Color(0xFF5CE487),
                                 Color(0xFF2EB4C8)
-
                             )
                         )
                     )
                     .clickable {
-                        viewModel.onSaveNote()
-                        if(!viewModel.titleError){
-                            backStack.removeLastOrNull()
+                        viewModel.onSaveNote {
+                            // Only navigate back if save was successful (no title error)
+                            if (!viewModel.titleError) {
+                                backStack.removeLastOrNull()
+                            }
                         }
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Row(modifier = Modifier, verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "Save",
                         fontWeight = FontWeight.Bold,
@@ -439,7 +442,7 @@ fun AddNotesScreen(
                     )
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "All Details",
+                        contentDescription = "Save",
                         tint = MaterialTheme.colorScheme.surfaceContainerLowest,
                         modifier = Modifier.size(20.dp)
                     )

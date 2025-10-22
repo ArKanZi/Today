@@ -1,6 +1,7 @@
 package com.arkanzi.today.ui.screens.main.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -16,10 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Badge
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,9 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -37,23 +34,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.arkanzi.today.model.Note
-import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.ui.components.SingleNote
 import com.arkanzi.today.ui.theme.ComfortaaFontFamily
 import com.arkanzi.today.util.displayTime
+
 @Composable
 fun ExpandableNotesSection(
+    modifier: Modifier = Modifier,
+    needBadge: Boolean = false,
+    needHorizontalDivider: Boolean = true,
+    noteCount: Int? = null,
     title: String,
     notes: List<Note>,
-    modifier: Modifier = Modifier,
-    visibility: Boolean,
-    iscompleted: (Note)-> Unit,
-    fullList:()-> Unit = {},
-    noteRepository: NoteRepository,
-    onclick:(Note)-> Unit
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    expandedNoteId: Long?,
+    deletingNoteIds: Set<Long> = emptySet(),
+    onToggleCompleted: (Note) -> Unit,
+    onDeleteRequest: (Note) -> Unit,
+    onEditRequest: (Note) -> Unit = {},
+    onFullListClick: () -> Unit = {},
+    onNoteClick: (Note) -> Unit
 ) {
-    // State for expansion
-    var isExpanded by remember { mutableStateOf(false) }
+
 
     // Rotation animation for arrow
     val arrowRotation by animateFloatAsState(
@@ -72,19 +75,44 @@ fun ExpandableNotesSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { isExpanded = !isExpanded }
+                .clickable { onToggleExpanded() }
                 .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Section Title
-            Text(
-                text = title,
-                fontSize = MaterialTheme.typography.titleSmall.fontSize,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = ComfortaaFontFamily,
-                color = Color.Gray
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f) // Take up remaining space
+            ) {
+                Text(
+                    text = title,
+                    fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = ComfortaaFontFamily,
+                    color = Color.Gray
+                )
+                if (needBadge) {
+                    Column(
+                        modifier = Modifier,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Badge(
+                            containerColor = Color.LightGray,
+                            contentColor = Color.Gray
+                        ) {
+                            Text(
+                                text = noteCount?.coerceAtMost(99)
+                                    .toString(), // 99+ pattern below if needed
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
 
             // Rotating Arrow Icon
             Icon(
@@ -96,11 +124,13 @@ fun ExpandableNotesSection(
                     .rotate(arrowRotation) // Apply rotation animation
             )
         }
-        HorizontalDivider(
-            Modifier.padding(bottom = 10.dp),
-            thickness = 1.dp,
-            color = Color.Gray.copy(alpha = 0.3f)
-        )
+        if (needHorizontalDivider) {
+            HorizontalDivider(
+                Modifier.padding(bottom = 10.dp),
+                thickness = 1.dp,
+                color = Color.Gray.copy(alpha = 0.3f)
+            )
+        }
 
         // Expandable Content with Animation
         AnimatedVisibility(
@@ -118,43 +148,46 @@ fun ExpandableNotesSection(
                 shrinkTowards = Alignment.Top
             )
         ) {
-            LazyColumn(
+            Column(
                 modifier = Modifier.heightIn(max = 400.dp) // Limit height
             ) {
-                items(items=notes, key = { it.id }) { note ->
+                notes.take(5).forEach { note ->
+                    val isDeleting = deletingNoteIds.contains(note.id)
                     AnimatedVisibility(
-                        visible = visibility,
+                        visible = !isDeleting, // Always visible initially
                         exit = fadeOut(
                             animationSpec = tween(500)
                         ) + shrinkVertically(
-                            animationSpec = tween(500)
+                            animationSpec = tween(500),
+                            shrinkTowards = Alignment.Top
                         ),
-                        modifier = Modifier.animateItem() // For LazyColumn item animations
-                    ){
-                    SingleNote(
-                        isCompleted = note.isCompleted,
-                        title = note.title,
-                        startingTime = displayTime(note.startDateTime),
-                        isRevealed = false,
-                        onCheckedChange = { iscompleted(note) },
-                        noteDelete = note,
-                        noteRepository=noteRepository,
-                        onClick = { onclick(note) }
-                    )}
+                        modifier = Modifier.animateContentSize() // Smooth height changes
+                    )
+                    {
+                        SingleNote(
+                            note = note,
+                            isCompleted = note.isCompleted,
+                            title = note.title,
+                            startingTime = displayTime(note.startDateTime),
+                            isRevealed = expandedNoteId == note.id,
+                            onCheckedChange = { onToggleCompleted(note) },
+                            onDeleteRequest = { onDeleteRequest(note) },
+                            onEditRequest = { onEditRequest(note) },
+                            onClick = { onNoteClick(note) }
+                        )
+                    }
                 }
 
                 // "View All" button at the end
-                if(notes.size > 5){
-                    item {
-                        TextButton(
-                            onClick = fullList,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "View All Notes",
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                if (notes.size > 5) {
+                    TextButton(
+                        onClick = onFullListClick,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "View All $title Notes",
+                            color = MaterialTheme.colorScheme.inverseSurface
+                        )
                     }
                 }
             }

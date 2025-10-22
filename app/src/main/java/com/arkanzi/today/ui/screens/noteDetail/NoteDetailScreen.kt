@@ -58,8 +58,8 @@ fun NoteDetailScreen(
     calendarTypeRepository: CalendarTypeRepository,
     note: Note
 ) {
-    val viewModel: NoteDetailScreenViewModel = viewModel(
-        factory = NoteDetailScreenViewModelFactory(calendarTypeRepository)
+    val viewModel: NoteDetailViewmodel = viewModel(
+        factory = NoteDetailViewmodelFactory(calendarTypeRepository)
     )
     val calendarName by viewModel.calendarName.collectAsState()
 

@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.arkanzi.today.repository.NoteRepository
 
-class MainScreenViewModelFactory(
+class MainViewmodelFactory(
     private val noteRepository: NoteRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if(modelClass.isAssignableFrom(MainScreenViewModel::class.java)) {
+        if(modelClass.isAssignableFrom(MainViewmodel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainScreenViewModel(noteRepository) as T
+            return MainViewmodel(noteRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

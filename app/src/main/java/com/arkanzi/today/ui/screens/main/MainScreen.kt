@@ -1,23 +1,15 @@
 package com.arkanzi.today.ui.screens.main
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,25 +34,34 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.App
 import com.arkanzi.today.R
 import com.arkanzi.today.repository.NoteRepository
+import com.arkanzi.today.ui.components.ConfirmationDialog
 import com.arkanzi.today.ui.components.NavigationBarCustom
-import com.arkanzi.today.ui.components.SingleNote
 import com.arkanzi.today.ui.components.TopAppBarCustom
 import com.arkanzi.today.ui.layout.DefaultLayout
+import com.arkanzi.today.ui.navigation.EditNoteScreenKey
 import com.arkanzi.today.ui.navigation.MainScreenKey
 import com.arkanzi.today.ui.navigation.NoteDetailScreenKey
+import com.arkanzi.today.ui.screens.editNote.EditNoteScreen
 import com.arkanzi.today.ui.screens.main.components.ExpandableNotesSection
 import com.arkanzi.today.ui.theme.ComfortaaFontFamily
 import com.arkanzi.today.util.UserPreferences
-import com.arkanzi.today.util.displayTime
 
 @Composable
-fun MainScreen(backStack: NavBackStack, noteRepository: NoteRepository,userPreferences: UserPreferences) {
-    val viewModel: MainScreenViewModel =
-        viewModel(factory = MainScreenViewModelFactory(noteRepository))
+fun MainScreen(
+    backStack: NavBackStack,
+    noteRepository: NoteRepository,
+    userPreferences: UserPreferences
+) {
+    val viewModel: MainViewmodel =
+        viewModel(factory = MainViewmodelFactory(noteRepository))
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val expandedSections by viewModel.expandedSections.collectAsState()
+    val expandedNoteId by viewModel.expandedNoteId.collectAsState()
     val upcomingNotes by viewModel.upcomingNotes.collectAsState()
     val upcomingNotesCount by viewModel.upcomingNotesCount.collectAsState()
     val dueNotes by viewModel.dueNotes.collectAsState()
     val historyNotes by viewModel.historyNotes.collectAsState()
+    val deletingNoteIds by viewModel.deletingNoteIds.collectAsState()
     DefaultLayout(
         topBar = {
             TopAppBarCustom(
@@ -76,19 +77,26 @@ fun MainScreen(backStack: NavBackStack, noteRepository: NoteRepository,userPrefe
                 rightContent = {
                     Box(
                         modifier = Modifier
-                            .size(32.dp).padding(1.dp)
-                            .shadow(1.dp, shape = CircleShape, ambientColor = DefaultShadowColor, spotColor = DefaultShadowColor)
+                            .size(32.dp)
+                            .padding(1.dp)
+                            .shadow(
+                                1.dp,
+                                shape = CircleShape,
+                                ambientColor = DefaultShadowColor,
+                                spotColor = DefaultShadowColor
+                            )
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceBright).clickable{},
+                            .background(MaterialTheme.colorScheme.surfaceBright)
+                            .clickable {},
                         contentAlignment = Alignment.Center
                     ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_magnifying_glass),
-                                contentDescription = "Search",
-                                tint = Color.Gray,
-                                modifier = Modifier
-                                    .size(24.dp)
-                            )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_magnifying_glass),
+                            contentDescription = "Search",
+                            tint = Color.Gray,
+                            modifier = Modifier
+                                .size(24.dp)
+                        )
                     }
                 })
         },
@@ -100,103 +108,98 @@ fun MainScreen(backStack: NavBackStack, noteRepository: NoteRepository,userPrefe
                 .padding(horizontal = 18.dp)
         ) {
 
-//            if (upcomingNotes.isEmpty() and dueNotes.isEmpty() and historyNotes.isEmpty()) {
-//
-//                Text("No notes yet.")
-//
-//            } else {
-            Text(
-                "Hey ${userPreferences.getUserName()}",
-                modifier = Modifier
-                    .fillMaxWidth(),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = MaterialTheme.typography.titleSmall.fontSize,
-                fontFamily = ComfortaaFontFamily,
-                color = Color.Gray
-            )
-            Text(
-                "what's your plan?",
-                modifier = Modifier.fillMaxWidth(),
-                fontSize = MaterialTheme.typography.headlineMedium.fontSize,
-                fontFamily = ComfortaaFontFamily,
-                fontWeight = FontWeight.ExtraBold
-            )
+            if (upcomingNotes.isEmpty() and dueNotes.isEmpty() and historyNotes.isEmpty()) {
+
+                Text("No notes yet.")
+
+            } else {
+                Text(
+                    "Hey ${userPreferences.getUserName()}",
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                    fontFamily = ComfortaaFontFamily,
+                    color = Color.Gray
+                )
+                Text(
+                    "what's your plan?",
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    fontSize = MaterialTheme.typography.headlineMedium.fontSize,
+                    fontFamily = ComfortaaFontFamily,
+                    fontWeight = FontWeight.ExtraBold
+                )
 //            Row {
 //                Box { Text("personal") }
 //            }
-            Row(
-                modifier = Modifier.padding(bottom = 8.dp, top = 20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-//                upcoming to-dos text
-                Column {
-                    Text(
-                        "Upcoming To-Do's ",
-                        modifier = Modifier,
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = ComfortaaFontFamily,
-                        color = Color.Gray
-                    )
-                }
-//                Counter Badge
-                Column(
-                    modifier = Modifier,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Badge(
-                        containerColor = Color.LightGray,
-                        contentColor = Color.Gray
-                    ) {
-                        Text(
-                            text = upcomingNotesCount.coerceAtMost(99)
-                                .toString(), // 99+ pattern below if needed
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1
-                        )
+
+                LazyColumn {
+                    if (upcomingNotes.isNotEmpty()) {
+                        item(key = "upcoming_section") {
+                            ExpandableNotesSection(
+                                title = "Upcoming To-Do's",
+                                needBadge = true,
+                                notes = upcomingNotes,
+                                needHorizontalDivider = false,
+                                isExpanded = expandedSections.contains("upcoming"),
+                                noteCount = upcomingNotesCount,
+                                onToggleExpanded = {
+                                    viewModel.toggleSectionExpanded("upcoming")
+                                },
+                                deletingNoteIds = deletingNoteIds,
+                                expandedNoteId = expandedNoteId,
+                                onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                                onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                                onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                            )
+                        }
+                    }
+
+                    if (dueNotes.isNotEmpty()) {
+                        item(key = "due_section") {
+                            ExpandableNotesSection(
+                                title = "Due's",
+                                notes = dueNotes,
+                                isExpanded = expandedSections.contains("due"),
+                                onToggleExpanded = {
+                                    viewModel.toggleSectionExpanded("due")
+                                },
+                                deletingNoteIds = deletingNoteIds,
+                                expandedNoteId = expandedNoteId,
+                                onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                                onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                                onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                            )
+                        }
+                    }
+
+
+                    if (historyNotes.isNotEmpty()) {
+                        item(key = "history_section") {
+                            ExpandableNotesSection(
+                                title = "History",
+                                notes = historyNotes,
+                                isExpanded = expandedSections.contains("history"),
+                                onToggleExpanded = {
+                                    viewModel.toggleSectionExpanded("history")
+                                },
+                                expandedNoteId = expandedNoteId,
+                                onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                                onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                                onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                                onEditRequest = { backStack.add(EditNoteScreenKey(it)) }
+                            )
+                        }
                     }
                 }
             }
-
-            LazyColumn {
-                items(upcomingNotes, key = { it.id }) { note ->
-                    AnimatedVisibility(
-                        visible = !note.isCompleted,
-                        exit = fadeOut(
-                            animationSpec = tween(500)
-                        ) + shrinkVertically(
-                            animationSpec = tween(500)
-                        ),
-                        modifier = Modifier.animateItem() // For LazyColumn item animations
-                    ){
-                    SingleNote(
-                        isCompleted = note.isCompleted,
-                        title = note.title,
-                        startingTime = displayTime(note.startDateTime),
-                        isRevealed = viewModel.noteExtraOptionsId,
-                        onCheckedChange = { viewModel.toggleCompleted(note) },
-                        noteDelete = note,
-                        noteRepository=noteRepository,
-                        onClick={backStack.add(NoteDetailScreenKey(note)) }
-                    )
-                    }
-                }
-            }
-
-            ExpandableNotesSection("Due's", dueNotes , visibility = true,
-                iscompleted = { note -> viewModel.toggleCompleted(note) },
-                noteRepository=noteRepository,
-                onclick = { note -> backStack.add(NoteDetailScreenKey(note)) }
+            ConfirmationDialog(
+                showDialog = showDeleteDialog,
+                onConfirm = viewModel::onDeleteConfirm,
+                onDismiss = viewModel::onDeleteDismiss
             )
-            ExpandableNotesSection("History", historyNotes , visibility = true,
-                iscompleted = { note -> viewModel.toggleCompleted(note) },
-                noteRepository=noteRepository,
-                onclick = { note -> backStack.add(NoteDetailScreenKey(note)) }
-            )
-//            Text("History")
-//            }
-
 
         }
 
@@ -206,10 +209,10 @@ fun MainScreen(backStack: NavBackStack, noteRepository: NoteRepository,userPrefe
 @Preview
 @Composable
 fun MainScreenPreview() {
-        val backStack = rememberNavBackStack(MainScreenKey)
-        val context = LocalContext.current
-        val db = App.DatabaseProvider.getDatabase(context)
-        val userPrefs = remember { UserPreferences.getInstance(context) }
-        val noteRepository = remember { NoteRepository(db.noteDao()) }
-        MainScreen(backStack, noteRepository,userPrefs)
+    val backStack = rememberNavBackStack(MainScreenKey)
+    val context = LocalContext.current
+    val db = App.DatabaseProvider.getDatabase(context)
+    val userPrefs = remember { UserPreferences.getInstance(context) }
+    val noteRepository = remember { NoteRepository(db.noteDao()) }
+    MainScreen(backStack, noteRepository, userPrefs)
 }
