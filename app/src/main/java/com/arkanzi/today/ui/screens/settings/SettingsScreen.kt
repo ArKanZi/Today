@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.R
 import com.arkanzi.today.ui.components.IconContainer
@@ -41,7 +42,7 @@ import com.arkanzi.today.util.UserPreferences
 
 @Composable
 fun SettingsScreen(
-    backStack: NavBackStack,
+    backStack: NavBackStack<NavKey>,
     userPreferences: UserPreferences
 ){
     val isDarkTheme by userPreferences.isDarkThemeFlow.collectAsStateWithLifecycle()

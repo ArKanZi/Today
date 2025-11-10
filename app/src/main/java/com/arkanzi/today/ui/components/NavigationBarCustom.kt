@@ -19,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.R
 import com.arkanzi.today.ui.navigation.AddNotesKey
@@ -30,7 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun NavigationBarCustom(backStack: NavBackStack) {
+fun NavigationBarCustom(backStack: NavBackStack<NavKey>) {
     val scope = rememberCoroutineScope()
     val top = backStack.lastOrNull()
     val selectedTint = MaterialTheme.colorScheme.onSurfaceVariant

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.App
 import com.arkanzi.today.R
@@ -54,7 +55,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteDetailScreen(
-    backStack: NavBackStack,
+    backStack: NavBackStack<NavKey>,
     calendarTypeRepository: CalendarTypeRepository,
     note: Note
 ) {

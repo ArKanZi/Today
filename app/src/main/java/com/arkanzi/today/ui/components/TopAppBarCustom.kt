@@ -25,6 +25,8 @@ fun TopAppBarCustom(
     leftContent: @Composable RowScope.() -> Unit = {},
     centerContent: @Composable RowScope.() -> Unit = {},
     rightContent: @Composable RowScope.() -> Unit = {},
+    fullWidthContent: @Composable RowScope.() -> Unit = {},
+    fullWidth: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -34,26 +36,38 @@ fun TopAppBarCustom(
             .windowInsetsPadding(WindowInsets.statusBars),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left slot
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Row(content = leftContent)
-        }
-        // Center slot
-        Box(
-            modifier = Modifier.weight(2f),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(horizontalArrangement = Arrangement.Center, content = centerContent)
-        }
-        // Right slot
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Row(horizontalArrangement = Arrangement.End, content = rightContent)
+        if(fullWidth){// Full width slot
+            Box(
+                modifier = Modifier.fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    content = fullWidthContent
+                )
+            }
+        } else
+        {// Left slot
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(content = leftContent)
+            }
+            // Center slot
+            Box(
+                modifier = Modifier.weight(2f),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(horizontalArrangement = Arrangement.Center, content = centerContent)
+            }
+            // Right slot
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Row(horizontalArrangement = Arrangement.End, content = rightContent)
+            }
         }
     }
 }

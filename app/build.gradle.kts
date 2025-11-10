@@ -55,6 +55,11 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.material3)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.compose.animation)
+
+    implementation(libs.androidx.compose.material.icons.extended)
+
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.core.ktx)

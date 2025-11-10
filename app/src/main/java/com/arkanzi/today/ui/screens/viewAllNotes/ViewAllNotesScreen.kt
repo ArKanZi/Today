@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.arkanzi.today.App
 import com.arkanzi.today.R
@@ -47,7 +48,7 @@ import com.arkanzi.today.util.displayTime
 
 @Composable
 fun ViewAllNotesScreen(
-    backStack: NavBackStack,
+    backStack: NavBackStack<NavKey>,
     noteRepository: NoteRepository,
     notesType: String
 ) {
