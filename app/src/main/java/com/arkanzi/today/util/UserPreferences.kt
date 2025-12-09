@@ -39,7 +39,7 @@ class UserPreferences private constructor(context: Context) {
     }
 
     fun getUserName(): String {
-        return sharedPrefs.getString(KEY_USER_NAME, "User") ?: "User"
+        return sharedPrefs.getString(KEY_USER_NAME, "") ?: ""
     }
 
     fun setDarkTheme(isDark: Boolean) {

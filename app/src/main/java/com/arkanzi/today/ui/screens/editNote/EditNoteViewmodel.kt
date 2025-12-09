@@ -1,10 +1,12 @@
 package com.arkanzi.today.ui.screens.editNote
 
+import android.content.Context
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arkanzi.today.model.CalendarType
 import com.arkanzi.today.model.Note
+import com.arkanzi.today.notification.ReminderScheduler
 import com.arkanzi.today.repository.CalendarTypeRepository
 import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.util.combineDateAndTime
@@ -29,7 +31,7 @@ class EditNoteViewmodel(
             emptyList()
         )
 
-    // Form fields with private setters
+    // Form fields
     var title by mutableStateOf("")
         private set
     var titleError by mutableStateOf(false)
@@ -47,22 +49,28 @@ class EditNoteViewmodel(
     var isCompleted by mutableStateOf(false)
         private set
 
-    // Date and time fields
+    var isNotificationOn by mutableStateOf(false)
+        private set
+
+    // Date + Time
+    private val nowMillis = System.currentTimeMillis()
+
     var startDate by mutableLongStateOf(
         LocalDate.now().atStartOfDay(ZoneOffset.UTC)
             .toInstant().toEpochMilli()
     )
         private set
 
-    private val _currentTime = System.currentTimeMillis()
-    var endDate by mutableLongStateOf(_currentTime)
-        private set
-    var startTime by mutableLongStateOf(_currentTime)
-        private set
-    var endTime by mutableLongStateOf(_currentTime + 3600000)
+    var endDate by mutableLongStateOf(nowMillis)
         private set
 
-    // Dialog states
+    var startTime by mutableLongStateOf(nowMillis)
+        private set
+
+    var endTime by mutableLongStateOf(nowMillis + 3600000)
+        private set
+
+    // Dialogs
     var showStartDatePicker by mutableStateOf(false)
         private set
     var showEndDatePicker by mutableStateOf(false)
@@ -72,171 +80,139 @@ class EditNoteViewmodel(
     var showEndTimePicker by mutableStateOf(false)
         private set
 
-    // Dropdown states
+    // Dropdowns
     var priorityExpanded by mutableStateOf(false)
         private set
     var calendarExpanded by mutableStateOf(false)
         private set
 
-    // Other states
-    var isAlarmSet by mutableStateOf(false)
-        private set
-
     val priorityOptions = listOf("Low", "Normal", "High")
 
+    // Store original note info
     private var originalNoteId: Long? = null
     private var originalCreatedAt: Long = 0L
 
+    // ----------------------------------------- //
+    //              INITIALIZE NOTE              //
+    // ----------------------------------------- //
     fun initializeWithNote(note: Note) {
         originalNoteId = note.id
         originalCreatedAt = note.createdAt
+
         title = note.title
         place = note.place
         noteContent = note.note
         priority = note.priority
         calendarTypeId = note.calendarTypeId
         isCompleted = note.isCompleted
+        isNotificationOn = note.isNotificationOn
 
-        // Set dates and times
+        // Set date & time fields
         startDate = note.startDateTime
         endDate = note.endDateTime
+
         startTime = note.startDateTime
         endTime = note.endDateTime
 
-        // Find and set calendar type name
+        // Load calendar type name
         viewModelScope.launch {
-            calendarTypes.value.find { it.id == note.calendarTypeId }?.let { selectedType ->
-                calendarTypeSelected = selectedType.name
+            calendarTypes.value.find { it.id == note.calendarTypeId }?.let {
+                calendarTypeSelected = it.name
             }
         }
     }
 
-    // Update functions for each field
+    // ----------------------------------------- //
+    //        UPDATE FUNCTIONS (unchanged)       //
+    // ----------------------------------------- //
     fun updateTitle(newTitle: String) {
         title = newTitle
-        if (titleError && newTitle.isNotBlank()) {
-            titleError = false
-        }
+        if (titleError && newTitle.isNotBlank()) titleError = false
     }
 
-    fun updatePlace(newPlace: String) {
-        place = newPlace
-    }
+    fun updatePlace(newPlace: String) { place = newPlace }
 
-    fun updateNoteContent(newContent: String) {
-        noteContent = newContent
-    }
+    fun updateNoteContent(newContent: String) { noteContent = newContent }
 
     fun updatePriority(newPriority: String) {
         priority = newPriority
         priorityExpanded = false
     }
 
-    fun updateCalendarType(newType: String, typeId: Long) {
-        calendarTypeSelected = newType
-        calendarTypeId = typeId
+    fun updateCalendarType(type: String, id: Long) {
+        calendarTypeSelected = type
+        calendarTypeId = id
         calendarExpanded = false
     }
 
-
-    fun toggleAlarm() {
-        isAlarmSet = !isAlarmSet
+    fun toggleIsNotificationOn() {
+        isNotificationOn = !isNotificationOn
     }
 
-    // Date and time update functions
-    fun updateStartDate(newDate: Long) {
-        startDate = newDate
-        showStartDatePicker = false
-    }
+    fun updateStartDate(v: Long) { startDate = v; showStartDatePicker = false }
+    fun updateEndDate(v: Long) { endDate = v; showEndDatePicker = false }
+    fun updateStartTime(v: Long) { startTime = v; showStartTimePicker = false }
+    fun updateEndTime(v: Long) { endTime = v; showEndTimePicker = false }
 
-    fun updateEndDate(newDate: Long) {
-        endDate = newDate
-        showEndDatePicker = false
-    }
+    fun showStartDatePicker() { showStartDatePicker = true }
+    fun hideStartDatePicker() { showStartDatePicker = false }
+    fun showEndDatePicker() { showEndDatePicker = true }
+    fun hideEndDatePicker() { showEndDatePicker = false }
+    fun showStartTimePicker() { showStartTimePicker = true }
+    fun hideStartTimePicker() { showStartTimePicker = false }
+    fun showEndTimePicker() { showEndTimePicker = true }
+    fun hideEndTimePicker() { showEndTimePicker = false }
 
-    fun updateStartTime(newTime: Long) {
-        startTime = newTime
-        showStartTimePicker = false
-    }
+    fun togglePriorityDropdown() { priorityExpanded = !priorityExpanded }
+    fun toggleCalendarDropdown() { calendarExpanded = !calendarExpanded }
 
-    fun updateEndTime(newTime: Long) {
-        endTime = newTime
-        showEndTimePicker = false
-    }
+    // ----------------------------------------- //
+    //               UPDATE NOTE                 //
+    // ----------------------------------------- //
+    fun onUpdateNote(context: Context, onSuccess: () -> Unit = {}) {
+        if (title.isBlank()) {
+            titleError = true
+            return
+        }
 
-    // Dialog control functions
-    fun showStartDatePicker() {
-        showStartDatePicker = true
-    }
+        originalNoteId?.let { id ->
+            val updatedNote = Note(
+                id = id,
+                title = title,
+                place = place,
+                startDateTime = combineDateAndTime(startDate, startTime),
+                endDateTime = combineDateAndTime(endDate, endTime),
+                note = noteContent,
+                priority = priority,
+                calendarTypeId = calendarTypeId,
+                createdAt = originalCreatedAt,
+                isCompleted = isCompleted,
+                isNotificationOn = isNotificationOn
+            )
 
-    fun hideStartDatePicker() {
-        showStartDatePicker = false
-    }
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    noteRepository.update(updatedNote)
 
-    fun showEndDatePicker() {
-        showEndDatePicker = true
-    }
-
-    fun hideEndDatePicker() {
-        showEndDatePicker = false
-    }
-
-    fun showStartTimePicker() {
-        showStartTimePicker = true
-    }
-
-    fun hideStartTimePicker() {
-        showStartTimePicker = false
-    }
-
-    fun showEndTimePicker() {
-        showEndTimePicker = true
-    }
-
-    fun hideEndTimePicker() {
-        showEndTimePicker = false
-    }
-
-    // Dropdown control functions
-    fun togglePriorityDropdown() {
-        priorityExpanded = !priorityExpanded
-    }
-
-    fun toggleCalendarDropdown() {
-        calendarExpanded = !calendarExpanded
-    }
-
-    fun onUpdateNote(onSuccess: () -> Unit = {}) {
-        if (title.isNotBlank()) {
-            originalNoteId?.let { noteId ->
-                val updatedNote = Note(
-                    id = noteId,
-                    title = title,
-                    place = place,
-                    startDateTime = combineDateAndTime(startDate, startTime),
-                    endDateTime = combineDateAndTime(endDate, endTime),
-                    note = noteContent,
-                    priority = priority,
-                    calendarTypeId = calendarTypeId,
-                    createdAt = originalCreatedAt, // Keep original or use existing
-                    isCompleted = isCompleted
-                )
-
-                viewModelScope.launch(Dispatchers.IO) {
-                    try {
-                        noteRepository.update(updatedNote)
-                        withContext(Dispatchers.Main) {
-                            onSuccess()
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            titleError = true
-                        }
+                    if (isNotificationOn) {
+                        ReminderScheduler.scheduleReminder(
+                            context,
+                            updatedNote.id.toInt(),
+                            updatedNote.startDateTime,
+                            updatedNote.title,
+                            "You have a reminder."
+                        )
+                    } else {
+                        ReminderScheduler.cancelReminder(context, updatedNote.id.toInt())
                     }
+
+                    withContext(Dispatchers.Main) { onSuccess() }
+
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) { titleError = true }
                 }
             }
-        } else {
-            titleError = true
         }
     }
+
 }

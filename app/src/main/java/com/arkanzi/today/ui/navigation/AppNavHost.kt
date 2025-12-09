@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import com.arkanzi.today.App
 import com.arkanzi.today.repository.CalendarTypeRepository
@@ -27,18 +28,24 @@ import com.arkanzi.today.ui.screens.noteDetail.NoteDetailScreen
 import com.arkanzi.today.ui.screens.search.SearchScreen
 import com.arkanzi.today.ui.screens.settings.SettingsScreen
 import com.arkanzi.today.ui.screens.stats.StatsScreen
+import com.arkanzi.today.ui.screens.user.UsernameSetupScreen
 import com.arkanzi.today.ui.screens.viewAllNotes.ViewAllNotesScreen
 import com.arkanzi.today.util.UserPreferences
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavHost() {
-    val backStack = rememberNavBackStack(MainScreenKey)
     val context = LocalContext.current
     val userPrefs = remember { UserPreferences.getInstance(context) }
+    val username = userPrefs.getUserName()
     val db = App.DatabaseProvider.getDatabase(context)
     val noteRepository = remember { NoteRepository(db.noteDao()) }
     val calendarTypeRepository = remember { CalendarTypeRepository(db.calendarTypeDao()) }
+    val startKey =
+        if (username.isEmpty()) UsernameSetupScreenKey
+        else MainScreenKey
+
+    val backStack = rememberNavBackStack(startKey)
 
     // ✅ SharedTransitionLayout wraps the entire NavDisplay
     SharedTransitionLayout {
@@ -47,14 +54,19 @@ fun AppNavHost() {
             onBack = { backStack.removeLastOrNull() },
             entryProvider = entryProvider {
 
+                entry<UsernameSetupScreenKey> {
+                    UsernameSetupScreen(backStack, userPrefs)
+                }
 
                 entry<MainScreenKey>(
                     metadata = NavDisplay.transitionSpec {
                         fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
                     }
                 ) {
+                    val localAnimationScope = LocalNavAnimatedContentScope.current
                     MainScreen(
                         sharedTransitionScope = this@SharedTransitionLayout,
+                        animationScope = localAnimationScope,
                         backStack = backStack,
                         noteRepository = noteRepository,
                         userPreferences = userPrefs,
@@ -70,7 +82,8 @@ fun AppNavHost() {
                         fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
                     }
                 ) {
-                    SearchScreen(this@SharedTransitionLayout,backStack)
+                    val localAnimationScope = LocalNavAnimatedContentScope.current
+                    SearchScreen(this@SharedTransitionLayout,localAnimationScope,backStack,noteRepository)
                 }
 
                 // 🟧 Add Notes (slide-up animation)

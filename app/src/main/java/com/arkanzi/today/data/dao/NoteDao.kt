@@ -47,4 +47,9 @@ interface NoteDao {
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     suspend fun getNoteById(id: Long): Note?
+
+    @Query("SELECT * FROM notes WHERE LOWER(title) LIKE '%' || LOWER(:query) || '%' OR LOWER(note) LIKE '%' || LOWER(:query) || '%'")
+    fun searchNotes(query: String): Flow<List<Note>>
+
+
 }

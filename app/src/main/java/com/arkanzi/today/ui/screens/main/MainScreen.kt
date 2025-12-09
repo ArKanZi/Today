@@ -1,10 +1,9 @@
 package com.arkanzi.today.ui.screens.main
 
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,9 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.DefaultShadowColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +35,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.arkanzi.today.App
 import com.arkanzi.today.R
 import com.arkanzi.today.repository.NoteRepository
@@ -60,6 +56,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     sharedTransitionScope: SharedTransitionScope,
+    animationScope: AnimatedVisibilityScope?,
     backStack: NavBackStack<NavKey>,
     noteRepository: NoteRepository,
     userPreferences: UserPreferences,
@@ -76,7 +73,25 @@ fun MainScreen(
     val historyNotes by viewModel.history6Notes.collectAsState()
     val deletingNoteIds by viewModel.deletingNoteIds.collectAsState()
 
+
     with(sharedTransitionScope) {
+        val newModifier: Modifier = if (animationScope != null){
+            Modifier
+                .size(40.dp)
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceBright)
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "search_bar"),
+                    animatedVisibilityScope = animationScope,
+                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                )
+                .clickable {
+                    backStack.add(SearchNotesScreenKey)
+                }
+        }else{
+            Modifier
+        }
         DefaultLayout(
             topBar = {
                 TopAppBarCustom(
@@ -92,19 +107,7 @@ fun MainScreen(
                     rightContent = {
                         // 🔹 Shared transition search icon
                         Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .padding(4.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceBright)
-                                .sharedBounds(
-                                    sharedContentState = rememberSharedContentState(key = "search_bar"),
-                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                                )
-                                .clickable {
-                                    backStack.add(SearchNotesScreenKey)
-                                },
+                            modifier = newModifier,
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -244,6 +247,6 @@ fun MainScreenPreview() {
     val userPrefs = remember { UserPreferences.getInstance(context) }
     val noteRepository = remember { NoteRepository(db.noteDao()) }
     SharedTransitionLayout {
-        MainScreen(this@SharedTransitionLayout, backStack, noteRepository, userPrefs)
+        MainScreen(this@SharedTransitionLayout, null, backStack, noteRepository, userPrefs)
     }
 }

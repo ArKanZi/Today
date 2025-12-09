@@ -255,6 +255,7 @@ fun SingleNotePreview() {
         priority = "High",
         calendarTypeId = 0,
         createdAt = 1672444800000, // Example timestamp
+        isNotificationOn = false
     )
     SingleNote(
         note = note,

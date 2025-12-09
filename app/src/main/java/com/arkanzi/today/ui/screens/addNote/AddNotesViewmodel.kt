@@ -1,10 +1,16 @@
 package com.arkanzi.today.ui.screens.addNote
 
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arkanzi.today.model.CalendarType
 import com.arkanzi.today.model.Note
+import com.arkanzi.today.notification.ReminderScheduler
 import com.arkanzi.today.repository.CalendarTypeRepository
 import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.util.combineDateAndTime
@@ -29,7 +35,7 @@ class AddNoteViewModel(
             emptyList()
         )
 
-    // Form fields with private setters
+    // Form fields
     var title by mutableStateOf("")
         private set
     var titleError by mutableStateOf(false)
@@ -45,6 +51,9 @@ class AddNoteViewModel(
     var calendarTypeId by mutableLongStateOf(0L)
         private set
     var isCompleted by mutableStateOf(false)
+        private set
+
+    var isNotificationOn by mutableStateOf(false)
         private set
 
     // Date and time fields
@@ -78,18 +87,12 @@ class AddNoteViewModel(
     var calendarExpanded by mutableStateOf(false)
         private set
 
-    // Other states
-    var isAlarmSet by mutableStateOf(false)
-        private set
-
     val priorityOptions = listOf("Low", "Normal", "High")
 
-    // Update functions for each field
+    // -------- UPDATE FUNCTIONS -------- //
     fun updateTitle(newTitle: String) {
         title = newTitle
-        if (titleError && newTitle.isNotBlank()) {
-            titleError = false
-        }
+        if (titleError && newTitle.isNotBlank()) titleError = false
     }
 
     fun updatePlace(newPlace: String) {
@@ -111,12 +114,10 @@ class AddNoteViewModel(
         calendarExpanded = false
     }
 
-
-    fun toggleAlarm() {
-        isAlarmSet = !isAlarmSet
+    fun toggleIsNotificationOn() {
+        isNotificationOn = !isNotificationOn
     }
 
-    // Date and time update functions
     fun updateStartDate(newDate: Long) {
         startDate = newDate
         showStartDatePicker = false
@@ -137,40 +138,15 @@ class AddNoteViewModel(
         showEndTimePicker = false
     }
 
-    // Dialog control functions
-    fun showStartDatePicker() {
-        showStartDatePicker = true
-    }
+    fun showStartDatePicker() { showStartDatePicker = true }
+    fun hideStartDatePicker() { showStartDatePicker = false }
+    fun showEndDatePicker() { showEndDatePicker = true }
+    fun hideEndDatePicker() { showEndDatePicker = false }
+    fun showStartTimePicker() { showStartTimePicker = true }
+    fun hideStartTimePicker() { showStartTimePicker = false }
+    fun showEndTimePicker() { showEndTimePicker = true }
+    fun hideEndTimePicker() { showEndTimePicker = false }
 
-    fun hideStartDatePicker() {
-        showStartDatePicker = false
-    }
-
-    fun showEndDatePicker() {
-        showEndDatePicker = true
-    }
-
-    fun hideEndDatePicker() {
-        showEndDatePicker = false
-    }
-
-    fun showStartTimePicker() {
-        showStartTimePicker = true
-    }
-
-    fun hideStartTimePicker() {
-        showStartTimePicker = false
-    }
-
-    fun showEndTimePicker() {
-        showEndTimePicker = true
-    }
-
-    fun hideEndTimePicker() {
-        showEndTimePicker = false
-    }
-
-    // Dropdown control functions
     fun togglePriorityDropdown() {
         priorityExpanded = !priorityExpanded
     }
@@ -179,34 +155,67 @@ class AddNoteViewModel(
         calendarExpanded = !calendarExpanded
     }
 
-    fun onSaveNote(onSuccess: () -> Unit = {}) {
-        if (title.isNotBlank()) {
-            val newNote = Note(
-                title = title,
-                place = place,
-                startDateTime = combineDateAndTime(startDate, startTime),
-                endDateTime = combineDateAndTime(endDate, endTime),
-                note = noteContent,
-                priority = priority,
-                calendarTypeId = calendarTypeId,
-                createdAt = System.currentTimeMillis(),
-                isCompleted = isCompleted
-            )
-
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    noteRepository.insert(newNote)
-                    withContext(Dispatchers.Main) {
-                        onSuccess()
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        titleError = true
-                    }
-                }
-            }
-        } else {
+    // -------------------------------------------------------------- //
+    //                           SAVE NOTE                            //
+    // -------------------------------------------------------------- //
+    fun onSaveNote(context: Context, onSuccess: () -> Unit = {}) {
+        if (title.isBlank()) {
             titleError = true
+            return
+        }
+
+        val startDateTime = combineDateAndTime(startDate, startTime)
+        val currentTime = System.currentTimeMillis()
+
+        if (isNotificationOn && startDateTime <= currentTime) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    context,
+                    "Reminder time must be in the future",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return
+        }
+
+        val newNote = Note(
+            title = title,
+            place = place,
+            startDateTime = startDateTime,
+            endDateTime = combineDateAndTime(endDate, endTime),
+            note = noteContent,
+            priority = priority,
+            calendarTypeId = calendarTypeId,
+            createdAt = currentTime,
+            isCompleted = isCompleted,
+            isNotificationOn = isNotificationOn
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val noteId = noteRepository.insert(newNote)
+
+                // Schedule only when notification is enabled
+                if (isNotificationOn) {
+                    ReminderScheduler.scheduleReminder(
+                        context,
+                        noteId.toInt(),
+                        newNote.startDateTime,
+                        newNote.title,
+                        "You have a reminder."
+                    )
+                } else {
+                    ReminderScheduler.cancelReminder(context, noteId.toInt())
+                }
+
+                withContext(Dispatchers.Main) { onSuccess() }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { titleError = true }
+                Log.e("addErrorIssue", e.toString())
+            }
         }
     }
+
+
 }

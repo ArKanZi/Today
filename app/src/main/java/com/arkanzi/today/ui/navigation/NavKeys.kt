@@ -4,7 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import com.arkanzi.today.model.Note
 import kotlinx.serialization.Serializable
 
-
+@Serializable object UsernameSetupScreenKey: NavKey
 @Serializable object MainScreenKey : NavKey
 @Serializable object AddNotesKey : NavKey
 @Serializable object StatsScreenKey : NavKey

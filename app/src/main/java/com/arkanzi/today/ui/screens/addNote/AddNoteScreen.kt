@@ -61,6 +61,7 @@ fun AddNotesScreen(
     noteRepository: NoteRepository,
     calendarTypeRepository: CalendarTypeRepository
 ) {
+    val context = LocalContext.current
     val viewModel: AddNoteViewModel = viewModel(
         factory = AddNoteViewModelFactory(noteRepository, calendarTypeRepository)
     )
@@ -382,9 +383,9 @@ fun AddNotesScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Switch(
-                        checked = viewModel.isAlarmSet,
-                        onCheckedChange = { viewModel.toggleAlarm() }, // Use ViewModel function
-                        thumbContent = if (viewModel.isAlarmSet) {
+                        checked = viewModel.isNotificationOn,
+                        onCheckedChange = { viewModel.toggleIsNotificationOn() }, // Use ViewModel function
+                        thumbContent = if (viewModel.isNotificationOn) {
                             {
                                 Icon(
                                     imageVector = Icons.Filled.Check,
@@ -421,7 +422,7 @@ fun AddNotesScreen(
                         )
                     )
                     .clickable {
-                        viewModel.onSaveNote {
+                        viewModel.onSaveNote(context = context) {
                             // Only navigate back if save was successful (no title error)
                             if (!viewModel.titleError) {
                                 backStack.removeLastOrNull()

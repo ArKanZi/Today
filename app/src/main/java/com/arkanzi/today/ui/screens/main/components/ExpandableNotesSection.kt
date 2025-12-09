@@ -53,6 +53,7 @@ fun ExpandableNotesSection(
     onToggleCompleted: (Note) -> Unit,
     onDeleteRequest: (Note) -> Unit,
     onEditRequest: (Note) -> Unit = {},
+    fullListNeeded: Boolean = false,
     onFullListClick: () -> Unit = {},
     onNoteClick: (Note) -> Unit
 ) {
@@ -67,6 +68,8 @@ fun ExpandableNotesSection(
         ),
         label = "Arrow rotation"
     )
+    val displayList = if (fullListNeeded) notes else notes.take(5)
+
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -149,9 +152,9 @@ fun ExpandableNotesSection(
             )
         ) {
             Column(
-                modifier = Modifier.heightIn(max = 400.dp) // Limit height
+                modifier = Modifier // Limit height
             ) {
-                notes.take(5).forEach { note ->
+                displayList.forEach { note ->
                     val isDeleting = deletingNoteIds.contains(note.id)
                     AnimatedVisibility(
                         visible = !isDeleting, // Always visible initially
@@ -179,15 +182,17 @@ fun ExpandableNotesSection(
                 }
 
                 // "View All" button at the end
-                if (notes.size > 5) {
-                    TextButton(
-                        onClick = onFullListClick,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            "View All $title Notes",
-                            color = MaterialTheme.colorScheme.inverseSurface
-                        )
+                if (!fullListNeeded){
+                    if (notes.size > 5) {
+                        TextButton(
+                            onClick = onFullListClick,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "View All $title Notes",
+                                color = MaterialTheme.colorScheme.inverseSurface
+                            )
+                        }
                     }
                 }
             }

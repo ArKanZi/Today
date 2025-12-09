@@ -272,9 +272,10 @@ fun NoteDetailScreen(
                 Column(modifier = Modifier.weight(3f)) { Text("Notification") }
                 Column(modifier = Modifier.weight(1f)) {
                     Switch(
-                        checked = viewModel.isNotification,
-                        onCheckedChange = { viewModel.isNotification = it },
-                        thumbContent = if (viewModel.isNotification) {
+                        checked = note.isNotificationOn,
+                        onCheckedChange = {},
+                        enabled = false,
+                        thumbContent = if (note.isNotificationOn) {
                             {
                                 Icon(
                                     imageVector = Icons.Filled.Check,

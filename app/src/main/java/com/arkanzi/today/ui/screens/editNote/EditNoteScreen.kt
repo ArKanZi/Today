@@ -63,6 +63,7 @@ fun EditNoteScreen(
     calendarTypeRepository: CalendarTypeRepository,
     note: Note
 ) {
+    val context = LocalContext.current
     val viewModel: EditNoteViewmodel = viewModel(
         factory = EditNoteViewmodelFactory(noteRepository, calendarTypeRepository)
     )
@@ -388,9 +389,9 @@ fun EditNoteScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Switch(
-                        checked = viewModel.isAlarmSet,
-                        onCheckedChange = { viewModel.toggleAlarm() }, // Use ViewModel function
-                        thumbContent = if (viewModel.isAlarmSet) {
+                        checked = viewModel.isNotificationOn,
+                        onCheckedChange = { viewModel.toggleIsNotificationOn() }, // Use ViewModel function
+                        thumbContent = if (viewModel.isNotificationOn) {
                             {
                                 Icon(
                                     imageVector = Icons.Filled.Check,
@@ -427,7 +428,7 @@ fun EditNoteScreen(
                         )
                     )
                     .clickable {
-                        viewModel.onUpdateNote {
+                        viewModel.onUpdateNote(context = context) {
                             // Only navigate back if save was successful (no title error)
                             if (!viewModel.titleError) {
                                 backStack.removeLastOrNull()

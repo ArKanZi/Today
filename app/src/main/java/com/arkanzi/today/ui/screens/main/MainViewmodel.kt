@@ -4,33 +4,64 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arkanzi.today.model.Note
 import com.arkanzi.today.repository.NoteRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 
-class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
+class MainViewmodel(
+    private val noteRepository: NoteRepository
+) : ViewModel() {
+
+    // Splash loading state
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    init {
+        initializeData()
+    }
+
+    private fun initializeData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 2️⃣ Preload all note queries
+            noteRepository.allNotes.firstOrNull()
+            noteRepository.get6Upcoming().firstOrNull()
+            noteRepository.get6Due().firstOrNull()
+            noteRepository.get6History().firstOrNull()
+            noteRepository.getTotalUpcomingCount().firstOrNull()
+
+            _isLoading.value = false
+        }
+    }
+
+    // ----------------------------------------------------
+    // Your existing flows (unchanged)
+    // ----------------------------------------------------
+
     val notes: StateFlow<List<Note>> = noteRepository.allNotes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
     val upcomingNotesCount: StateFlow<Int> = noteRepository.getTotalUpcomingCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
 
-    val upcoming6Notes: StateFlow<List<Note>> = noteRepository.get6Upcoming()
+    val upcoming6Notes = noteRepository.get6Upcoming()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
-    val due6Notes: StateFlow<List<Note>> = noteRepository.get6Due()
+    val due6Notes = noteRepository.get6Due()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
-
-
-    val history6Notes: StateFlow<List<Note>> = noteRepository.get6History()
+    val history6Notes = noteRepository.get6History()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
 
+    // ----------------------------------------------------
+    // Your UI-related logic (unchanged)
+    // ----------------------------------------------------
 
     private val _showDeleteDialog = MutableStateFlow(false)
     val showDeleteDialog: StateFlow<Boolean> = _showDeleteDialog.asStateFlow()
@@ -41,18 +72,13 @@ class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
     private val _deletingNoteIds = MutableStateFlow<Set<Long>>(emptySet())
     val deletingNoteIds: StateFlow<Set<Long>> = _deletingNoteIds.asStateFlow()
 
-
     private var _noteToDelete: Note? = null
 
-
     fun toggleCompleted(note: Note) {
-        val updatedNote = note.copy(isCompleted = !note.isCompleted)
-        viewModelScope.launch {
-            noteRepository.update(updatedNote)
-    }
+        val updated = note.copy(isCompleted = !note.isCompleted)
+        viewModelScope.launch { noteRepository.update(updated) }
     }
 
-    // Handle swipe reveal state
     fun toggleNoteOptions(noteId: Long) {
         _expandedNoteId.value = if (_expandedNoteId.value == noteId) null else noteId
     }
@@ -64,23 +90,17 @@ class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
     fun showDeleteConfirmation(note: Note) {
         _noteToDelete = note
         _showDeleteDialog.value = true
-        closeNoteOptions() // Close swipe options when dialog opens
+        closeNoteOptions()
     }
 
     fun onDeleteConfirm() {
         _noteToDelete?.let { note ->
-            // Add to deleting set for animation
-            _deletingNoteIds.value = _deletingNoteIds.value + note.id
+            _deletingNoteIds.value += note.id
 
             viewModelScope.launch {
-                // Delay to allow animation to complete
-                delay(500) // Match animation duration
-
-                // Actually delete from database
+                delay(500)
                 noteRepository.delete(note)
-
-                // Remove from deleting set
-                _deletingNoteIds.value = _deletingNoteIds.value - note.id
+                _deletingNoteIds.value -= note.id
             }
         }
         onDeleteDismiss()
@@ -91,16 +111,13 @@ class MainViewmodel(private val noteRepository: NoteRepository): ViewModel() {
         _noteToDelete = null
     }
 
-    private val _expandedSections = MutableStateFlow<Set<String>>(emptySet())
+    private val _expandedSections = MutableStateFlow<Set<String>>(setOf("upcoming"))
     val expandedSections: StateFlow<Set<String>> = _expandedSections.asStateFlow()
 
     fun toggleSectionExpanded(sectionName: String) {
-        val currentExpanded = _expandedSections.value.toMutableSet()
-        if (currentExpanded.contains(sectionName)) {
-            currentExpanded.remove(sectionName)
-        } else {
-            currentExpanded.add(sectionName)
-        }
-        _expandedSections.value = currentExpanded
+        val updated = _expandedSections.value.toMutableSet()
+        if (updated.contains(sectionName)) updated.remove(sectionName)
+        else updated.add(sectionName)
+        _expandedSections.value = updated
     }
 }

@@ -35,6 +35,7 @@ data class Note(
     var priority: String = "Normal",
     var calendarTypeId: Long,
     val createdAt: Long = System.currentTimeMillis(),
-    var isCompleted: Boolean = false
+    var isCompleted: Boolean = false,
+    val isNotificationOn: Boolean = false
 )
 
