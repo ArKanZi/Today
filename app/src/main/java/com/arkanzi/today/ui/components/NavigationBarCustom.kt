@@ -27,7 +27,6 @@ import com.arkanzi.today.ui.navigation.CalendarScreenKey
 import com.arkanzi.today.ui.navigation.MainScreenKey
 import com.arkanzi.today.ui.navigation.SettingsScreenKey
 import com.arkanzi.today.ui.navigation.StatsScreenKey
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -77,24 +76,24 @@ fun NavigationBarCustom(backStack: NavBackStack<NavKey>) {
             }
 
 //            Stats button
-            IconButton(
-                onClick = {
-                    if (backStack.lastOrNull() != StatsScreenKey)
-                        scope.launch {
-                            backStack.add(StatsScreenKey)
-                        }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_activity),
-                    contentDescription = "Notes",
-                    tint = tintFor(StatsScreenKey),
-                    modifier = Modifier.weight(1f)
-                )
-            }
+//            IconButton(
+//                onClick = {
+//                    if (backStack.lastOrNull() != StatsScreenKey)
+//                        scope.launch {
+//                            backStack.add(StatsScreenKey)
+//                        }
+//                },
+//                modifier = Modifier
+//                    .weight(1f)
+//                    .fillMaxHeight()
+//            ) {
+//                Icon(
+//                    painter = painterResource(id = R.drawable.ic_activity),
+//                    contentDescription = "Notes",
+//                    tint = tintFor(StatsScreenKey),
+//                    modifier = Modifier.weight(1f)
+//                )
+//            }
 //            Add Note Button
             Box(modifier = Modifier.weight(1f)) {
                 Box(
@@ -127,22 +126,22 @@ fun NavigationBarCustom(backStack: NavBackStack<NavKey>) {
             }
 
 //            Calendar Button
-            IconButton(
-                onClick = {
-                    if (backStack.lastOrNull() != CalendarScreenKey)
-                        scope.launch { backStack.add(CalendarScreenKey) }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_calendar),
-                    contentDescription = "Calendar",
-                    tint = tintFor(CalendarScreenKey),
-                    modifier = Modifier.weight(1f)
-                )
-            }
+//            IconButton(
+//                onClick = {
+//                    if (backStack.lastOrNull() != CalendarScreenKey)
+//                        scope.launch { backStack.add(CalendarScreenKey) }
+//                },
+//                modifier = Modifier
+//                    .weight(1f)
+//                    .fillMaxHeight()
+//            ) {
+//                Icon(
+//                    painter = painterResource(id = R.drawable.ic_calendar),
+//                    contentDescription = "Calendar",
+//                    tint = tintFor(CalendarScreenKey),
+//                    modifier = Modifier.weight(1f)
+//                )
+//            }
 
 //            Settings Button
             IconButton(

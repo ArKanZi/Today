@@ -1,20 +1,17 @@
 package com.arkanzi.today.ui.screens.main
 
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,13 +35,9 @@ import com.arkanzi.today.App
 import com.arkanzi.today.R
 import com.arkanzi.today.repository.NoteRepository
 import com.arkanzi.today.ui.components.ConfirmationDialog
-import com.arkanzi.today.ui.components.NavigationBarCustom
-import com.arkanzi.today.ui.components.TopAppBarCustom
-import com.arkanzi.today.ui.layout.DefaultLayout
 import com.arkanzi.today.ui.navigation.EditNoteScreenKey
 import com.arkanzi.today.ui.navigation.MainScreenKey
 import com.arkanzi.today.ui.navigation.NoteDetailScreenKey
-import com.arkanzi.today.ui.navigation.SearchNotesScreenKey
 import com.arkanzi.today.ui.navigation.ViewAllNotesScreenKey
 import com.arkanzi.today.ui.screens.main.components.ExpandableNotesSection
 import com.arkanzi.today.ui.theme.ComfortaaFontFamily
@@ -55,8 +47,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animationScope: AnimatedVisibilityScope?,
     backStack: NavBackStack<NavKey>,
     noteRepository: NoteRepository,
     userPreferences: UserPreferences,
@@ -74,171 +64,134 @@ fun MainScreen(
     val deletingNoteIds by viewModel.deletingNoteIds.collectAsState()
 
 
-    with(sharedTransitionScope) {
-        val newModifier: Modifier = if (animationScope != null){
-            Modifier
-                .size(40.dp)
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceBright)
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "search_bar"),
-                    animatedVisibilityScope = animationScope,
-                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                )
-                .clickable {
-                    backStack.add(SearchNotesScreenKey)
-                }
-        }else{
-            Modifier
-        }
-        DefaultLayout(
-            topBar = {
-                TopAppBarCustom(
-                    fullWidth = false,
-                    leftContent = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_horizontal_menu),
-                            contentDescription = "Menu",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    rightContent = {
-                        // 🔹 Shared transition search icon
-                        Box(
-                            modifier = newModifier,
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_magnifying_glass),
-                                contentDescription = "Search",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                )
-            },
-            bottomBar = { NavigationBarCustom(backStack) }
-        ) { innerPadding ->
+    if (upcomingNotes.isEmpty() && dueNotes.isEmpty() && historyNotes.isEmpty()) {
+
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 18.dp)
+                modifier = Modifier,
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (upcomingNotes.isEmpty() && dueNotes.isEmpty() && historyNotes.isEmpty()) {
-                    Text("No notes yet.")
-                } else {
-                    Text(
-                        "Hey ${userPreferences.getUserName()}",
-                        modifier = Modifier.fillMaxWidth(),
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize,
-                        fontFamily = ComfortaaFontFamily,
-                        color = Color.Gray
-                    )
-                    Text(
-                        "what's your plan?",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        fontSize = MaterialTheme.typography.headlineMedium.fontSize,
-                        fontFamily = ComfortaaFontFamily,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-
-                    LazyColumn {
-                        if (upcomingNotes.isNotEmpty()) {
-                            item(key = "upcoming_section") {
-                                ExpandableNotesSection(
-                                    title = "Upcoming To-Do's",
-                                    needBadge = true,
-                                    notes = upcomingNotes,
-                                    needHorizontalDivider = false,
-                                    isExpanded = expandedSections.contains("upcoming"),
-                                    noteCount = upcomingNotesCount,
-                                    onToggleExpanded = {
-                                        viewModel.toggleSectionExpanded("upcoming")
-                                    },
-                                    deletingNoteIds = deletingNoteIds,
-                                    expandedNoteId = expandedNoteId,
-                                    onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                                    onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                                    onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                    onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                                    onFullListClick = {
-                                        viewModel.viewModelScope.launch {
-                                            backStack.add(ViewAllNotesScreenKey("upcoming"))
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                        if (dueNotes.isNotEmpty()) {
-                            item(key = "due_section") {
-                                ExpandableNotesSection(
-                                    title = "Due's",
-                                    notes = dueNotes,
-                                    isExpanded = expandedSections.contains("due"),
-                                    onToggleExpanded = {
-                                        viewModel.toggleSectionExpanded("due")
-                                    },
-                                    deletingNoteIds = deletingNoteIds,
-                                    expandedNoteId = expandedNoteId,
-                                    onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                                    onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                                    onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                    onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                                    onFullListClick = {
-                                        viewModel.viewModelScope.launch {
-                                            backStack.add(ViewAllNotesScreenKey("due"))
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                        if (historyNotes.isNotEmpty()) {
-                            item(key = "history_section") {
-                                ExpandableNotesSection(
-                                    title = "History",
-                                    notes = historyNotes,
-                                    isExpanded = expandedSections.contains("history"),
-                                    onToggleExpanded = {
-                                        viewModel.toggleSectionExpanded("history")
-                                    },
-                                    expandedNoteId = expandedNoteId,
-                                    onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                                    onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                                    onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                                    onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                                    onFullListClick = {
-                                        viewModel.viewModelScope.launch {
-                                            backStack.add(ViewAllNotesScreenKey("history"))
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                ConfirmationDialog(
-                    showDialog = showDeleteDialog,
-                    onConfirm = viewModel::onDeleteConfirm,
-                    onDismiss = viewModel::onDeleteDismiss
+                Image(
+                    painter = painterResource(id = R.drawable.no_notes),
+                    contentDescription = "background Image",
+                )
+                Spacer(modifier = Modifier.size(30.dp))
+                Text(
+                    "You haven't planned yet anything",
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = ComfortaaFontFamily,
                 )
             }
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                "Hey ${userPreferences.getUserName()}",
+                modifier = Modifier.fillMaxWidth(),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                fontFamily = ComfortaaFontFamily,
+                color = Color.Gray
+            )
+            Text(
+                "what's your plan?",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                fontSize = MaterialTheme.typography.headlineMedium.fontSize,
+                fontFamily = ComfortaaFontFamily,
+                fontWeight = FontWeight.ExtraBold
+            )
 
+            LazyColumn {
+                if (upcomingNotes.isNotEmpty()) {
+                    item(key = "upcoming_section") {
+                        ExpandableNotesSection(
+                            title = "Upcoming To-Do's",
+                            needBadge = true,
+                            notes = upcomingNotes,
+                            needHorizontalDivider = false,
+                            isExpanded = expandedSections.contains("upcoming"),
+                            noteCount = upcomingNotesCount,
+                            onToggleExpanded = {
+                                viewModel.toggleSectionExpanded("upcoming")
+                            },
+                            deletingNoteIds = deletingNoteIds,
+                            expandedNoteId = expandedNoteId,
+                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                            onFullListClick = {
+                                viewModel.viewModelScope.launch {
+                                    backStack.add(ViewAllNotesScreenKey("upcoming"))
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (dueNotes.isNotEmpty()) {
+                    item(key = "due_section") {
+                        ExpandableNotesSection(
+                            title = "Due's",
+                            notes = dueNotes,
+                            isExpanded = expandedSections.contains("due"),
+                            onToggleExpanded = {
+                                viewModel.toggleSectionExpanded("due")
+                            },
+                            deletingNoteIds = deletingNoteIds,
+                            expandedNoteId = expandedNoteId,
+                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                            onFullListClick = {
+                                viewModel.viewModelScope.launch {
+                                    backStack.add(ViewAllNotesScreenKey("due"))
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (historyNotes.isNotEmpty()) {
+                    item(key = "history_section") {
+                        ExpandableNotesSection(
+                            title = "History",
+                            notes = historyNotes,
+                            isExpanded = expandedSections.contains("history"),
+                            onToggleExpanded = {
+                                viewModel.toggleSectionExpanded("history")
+                            },
+                            expandedNoteId = expandedNoteId,
+                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                            onFullListClick = {
+                                viewModel.viewModelScope.launch {
+                                    backStack.add(ViewAllNotesScreenKey("history"))
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
+
+    ConfirmationDialog(
+        showDialog = showDeleteDialog,
+        onConfirm = viewModel::onDeleteConfirm,
+        onDismiss = viewModel::onDeleteDismiss
+    )
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
     val backStack = rememberNavBackStack(MainScreenKey)
@@ -247,6 +200,6 @@ fun MainScreenPreview() {
     val userPrefs = remember { UserPreferences.getInstance(context) }
     val noteRepository = remember { NoteRepository(db.noteDao()) }
     SharedTransitionLayout {
-        MainScreen(this@SharedTransitionLayout, null, backStack, noteRepository, userPrefs)
+        MainScreen(backStack, noteRepository, userPrefs)
     }
 }

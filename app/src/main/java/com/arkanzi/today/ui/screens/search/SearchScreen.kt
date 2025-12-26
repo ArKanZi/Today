@@ -1,5 +1,6 @@
 package com.arkanzi.today.ui.screens.search
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,12 +46,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animationScope: AnimatedVisibilityScope?,
     backStack: NavBackStack<NavKey>,
-    noteRepository: NoteRepository
+    viewModel: SearchViewModel
 ) {
-    val viewModel: SearchViewModel = viewModel(factory = SearchViewmodelFactory(noteRepository))
     val deletingNoteIds by viewModel.deletingNoteIds.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val expandedSections by viewModel.expandedSections.collectAsState()
@@ -59,138 +59,100 @@ fun SearchScreen(
     val historyNotes by viewModel.historyNotes.collectAsState()
 
     val results by viewModel.results.collectAsState()
-    DefaultLayout(
-        topBar = {
-            with(sharedTransitionScope) {
-                TopAppBarCustom(
-                    fullWidth = true,
-                    fullWidthContent = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val newModifier: Modifier = if (animationScope != null){
-                                Modifier
-                                    .sharedBounds(
-                                        sharedContentState = rememberSharedContentState(key = "search_bar"),
-                                        animatedVisibilityScope = animationScope,
-                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                                    )
-                            }else{
-                                Modifier
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn {
+            if (upcomingNotes.isNotEmpty()) {
+                item(key = "upcoming_section") {
+                    ExpandableNotesSection(
+                        title = "Upcoming To-Do's",
+                        needBadge = true,
+                        noteCount = upcomingNotes.size,
+                        notes = upcomingNotes,
+                        needHorizontalDivider = false,
+                        isExpanded = expandedSections.contains("upcoming"),
+                        onToggleExpanded = {
+                            viewModel.toggleSectionExpanded("upcoming")
+                        },
+                        deletingNoteIds = deletingNoteIds,
+                        expandedNoteId = expandedNoteId,
+                        onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                        onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                        onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                        onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                        fullListNeeded = true,
+                        onFullListClick = {
+                            viewModel.viewModelScope.launch {
+                                backStack.add(ViewAllNotesScreenKey("upcoming"))
                             }
-                            CustomSearchBar(
-                                modifier = newModifier,
-                                onSearchQueryChange = { viewModel.updateQuery(it,System.currentTimeMillis()) },
-                                backAction = { backStack.removeLastOrNull() })
                         }
-                    }
-                )
+                    )
+                }
             }
-        },
-        bottomBar = { NavigationBarCustom(backStack) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 18.dp)
-        ) {
-            LazyColumn {
-                if (upcomingNotes.isNotEmpty()) {
-                    item(key = "upcoming_section") {
-                        ExpandableNotesSection(
-                            title = "Upcoming To-Do's",
-                            needBadge = true,
-                            noteCount = upcomingNotes.size,
-                            notes = results,
-                            needHorizontalDivider = false,
-                            isExpanded = expandedSections.contains("upcoming"),
-                            onToggleExpanded = {
-                                viewModel.toggleSectionExpanded("upcoming")
-                            },
-                            deletingNoteIds = deletingNoteIds,
-                            expandedNoteId = expandedNoteId,
-                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                            fullListNeeded = true,
-                            onFullListClick = {
-                                viewModel.viewModelScope.launch {
-                                    backStack.add(ViewAllNotesScreenKey("upcoming"))
-                                }
-                            }
-                        )
-                    }
-                }
 
-                if (dueNotes.isNotEmpty()) {
-                    item(key = "due_section") {
-                        ExpandableNotesSection(
-                            title = "Due's",
-                            needBadge = true,
-                            noteCount = dueNotes.size,
-                            notes = dueNotes,
-                            isExpanded = expandedSections.contains("due"),
-                            onToggleExpanded = {
-                                viewModel.toggleSectionExpanded("due")
-                            },
-                            deletingNoteIds = deletingNoteIds,
-                            expandedNoteId = expandedNoteId,
-                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                            fullListNeeded = true,
-                            onFullListClick = {
-                                viewModel.viewModelScope.launch {
-                                    backStack.add(ViewAllNotesScreenKey("due"))
-                                }
+            if (dueNotes.isNotEmpty()) {
+                item(key = "due_section") {
+                    ExpandableNotesSection(
+                        title = "Due's",
+                        needBadge = true,
+                        noteCount = dueNotes.size,
+                        notes = dueNotes,
+                        isExpanded = expandedSections.contains("due"),
+                        onToggleExpanded = {
+                            viewModel.toggleSectionExpanded("due")
+                        },
+                        deletingNoteIds = deletingNoteIds,
+                        expandedNoteId = expandedNoteId,
+                        onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                        onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                        onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                        onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                        fullListNeeded = true,
+                        onFullListClick = {
+                            viewModel.viewModelScope.launch {
+                                backStack.add(ViewAllNotesScreenKey("due"))
                             }
-                        )
-                    }
+                        }
+                    )
                 }
-
-                if (historyNotes.isNotEmpty()) {
-                    item(key = "history_section") {
-                        ExpandableNotesSection(
-                            title = "History",
-                            needBadge = true,
-                            noteCount = historyNotes.size,
-                            notes = historyNotes,
-                            isExpanded = expandedSections.contains("history"),
-                            onToggleExpanded = {
-                                viewModel.toggleSectionExpanded("history")
-                            },
-                            expandedNoteId = expandedNoteId,
-                            onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
-                            onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
-                            onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
-                            onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
-                            fullListNeeded = true,
-                            onFullListClick = {
-                                viewModel.viewModelScope.launch {
-                                    backStack.add(ViewAllNotesScreenKey("history"))
-                                }
-                            }
-                        )
-                    }
-                }
-
             }
-            ConfirmationDialog(
-                showDialog = showDeleteDialog,
-                onConfirm = viewModel::onDeleteConfirm,
-                onDismiss = viewModel::onDeleteDismiss
-            )
+
+            if (historyNotes.isNotEmpty()) {
+                item(key = "history_section") {
+                    ExpandableNotesSection(
+                        title = "History",
+                        needBadge = true,
+                        noteCount = historyNotes.size,
+                        notes = historyNotes,
+                        isExpanded = expandedSections.contains("history"),
+                        onToggleExpanded = {
+                            viewModel.toggleSectionExpanded("history")
+                        },
+                        expandedNoteId = expandedNoteId,
+                        onNoteClick = { note -> backStack.add(NoteDetailScreenKey(note)) },
+                        onToggleCompleted = { note -> viewModel.toggleCompleted(note) },
+                        onDeleteRequest = { viewModel.showDeleteConfirmation(it) },
+                        onEditRequest = { backStack.add(EditNoteScreenKey(it)) },
+                        fullListNeeded = true,
+                        onFullListClick = {
+                            viewModel.viewModelScope.launch {
+                                backStack.add(ViewAllNotesScreenKey("history"))
+                            }
+                        }
+                    )
+                }
+            }
+
         }
+        ConfirmationDialog(
+            showDialog = showDeleteDialog,
+            onConfirm = viewModel::onDeleteConfirm,
+            onDismiss = viewModel::onDeleteDismiss
+        )
     }
 }
 
+@SuppressLint("ViewModelConstructorInComposable")
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
@@ -202,6 +164,6 @@ fun Material3AnimatedSearchBarPreview() {
     val noteRepository = remember { NoteRepository(db.noteDao()) }
 
     SharedTransitionLayout {
-        SearchScreen(this@SharedTransitionLayout, null, backStack, noteRepository)
+        SearchScreen(backStack, viewModel = SearchViewModel(noteRepository))
     }
 }

@@ -41,8 +41,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.arkanzi.today.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -89,14 +91,19 @@ fun CustomSearchBar(
                         },
                         label = "SearchIcon"
                     ) { expanded ->
-                        Icon(
-                            imageVector = if (expanded)
-                                Icons.AutoMirrored.Filled.ArrowBack
-                            else
-                                Icons.Default.Search,
-                            contentDescription = if (expanded) "Back" else "Search",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        if (expanded) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_magnifying_glass),
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
 

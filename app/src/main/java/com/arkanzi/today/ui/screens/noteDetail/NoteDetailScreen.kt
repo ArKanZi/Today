@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -24,14 +22,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,17 +40,13 @@ import com.arkanzi.today.model.Note
 import com.arkanzi.today.repository.CalendarTypeRepository
 import com.arkanzi.today.ui.components.IconContainer
 import com.arkanzi.today.ui.components.InputFields
-import com.arkanzi.today.ui.components.TopAppBarCustom
-import com.arkanzi.today.ui.layout.DefaultLayout
 import com.arkanzi.today.ui.navigation.MainScreenKey
 import com.arkanzi.today.util.displayDate
 import com.arkanzi.today.util.displayTime
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteDetailScreen(
-    backStack: NavBackStack<NavKey>,
     calendarTypeRepository: CalendarTypeRepository,
     note: Note
 ) {
@@ -67,45 +58,9 @@ fun NoteDetailScreen(
     LaunchedEffect(note.calendarTypeId) {
         viewModel.loadCalendarName(note.calendarTypeId)
     }
-    val scope = rememberCoroutineScope()
-    DefaultLayout(topBar = {
-        TopAppBarCustom(
-            leftContent = {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            backStack.removeLastOrNull()
-                        }
-                    },
-                    modifier = Modifier
-                        .size(24.dp)
 
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_cross),
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .size(24.dp)
-
-                    )
-                }
-            },
-            centerContent = {
-                Text(
-                    "Details",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                )
-            }
-        )
-    }
-    ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 18.dp),
+            modifier = Modifier,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 //            Title
@@ -291,7 +246,6 @@ fun NoteDetailScreen(
         }
 
     }
-}
 
 @Preview
 @Composable
@@ -311,5 +265,5 @@ fun NoteDetailScreenPreview() {
         calendarTypeId = 0,
         createdAt = 1672444800000, // Example timestamp
     )
-    NoteDetailScreen(backStack, calendarRepository, note)
+    NoteDetailScreen( calendarRepository, note)
 }
